@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS for WebSocket allow *
-  app.enableCors({ origin: 'http://localhost:5173' });
+  app.enableCors({ origin: '*' });
 
   // Use custom IoAdapter for WebSocket
   app.useWebSocketAdapter(new IoAdapter(app));
