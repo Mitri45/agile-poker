@@ -16,7 +16,6 @@ export default function GetUsername() {
     <div className="bg-gray-100 min-h-screen flex items-center justify-center">
       <div className="bg-white p-8 rounded shadow-md w-96">
         <h1 className="text-2xl font-bold mb-4">
-          {' '}
           You are joining room {location.state.roomName}
         </h1>
 

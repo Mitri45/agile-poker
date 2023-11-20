@@ -35,7 +35,7 @@ export default function AgilePokerPage() {
           console.log('checkRoom response: ', response);
           if (!response) {
             navigate(`/`, {
-              state: { message: 'Room you trying to access is empty' },
+              state: { message: 'Room you were trying to access is empty' },
             });
             return;
           } else {
