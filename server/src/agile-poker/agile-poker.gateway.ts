@@ -24,15 +24,16 @@ export class AgilePokerGateway
     console.log(`Client disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage('joinRoom')
-  handleJoinRoom(
+  @SubscribeMessage('createRoom')
+  handleCreateRoom(
     @MessageBody()
     data: { roomId: string; participant: string; roomName: string },
     @ConnectedSocket() client: Socket,
   ): void {
-    console.log('handleJoinRoom', data.roomName);
+    console.log('Creating a room with a name', data.roomName);
     client.join(data.roomId);
-    this.server.to(data.roomId).emit('userJoined', data.participant);
+    const session = this.agilePokerService.getSession(data.roomId);
+    this.server.to(data.roomId).emit('roomCreated', session);
   }
 
   @SubscribeMessage('connectToTheRoom')

@@ -5,7 +5,7 @@ export class ConnectToRoomDto {
 }
 
 export class startAgilePokerDto {
-  participant: string;
+  userName: string;
   roomName: string;
 }
 

@@ -9,10 +9,9 @@ export class AgilePokerController {
   @Post('getRoomID')
   getRoomId(@Req() { body }: CreateRoomDto) {
     console.log('startAgilePoker');
-    console.log(body.participant);
+    console.log(body);
     // Start websocket server for this roomID
     const uniqueRoomUrl = this.agilePokerService.startSession(body);
-
     return { status: 'ok', roomId: uniqueRoomUrl };
   }
 

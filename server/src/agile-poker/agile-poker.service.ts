@@ -12,14 +12,18 @@ export class AgilePokerService {
   > = new Map();
   @WebSocketServer() server: Server;
 
-  startSession({ participant, roomName }: startAgilePokerDto): string {
+  getSession(roomId: string) {
+    return this.sessions.get(roomId);
+  }
+
+  startSession({ roomName, userName }: startAgilePokerDto): string {
     const votes: Record<string, number> = {};
     // Generate unique room ID for URL
     const roomId = uuidv5('Agile poker', uuidv5.URL);
     console.log(roomId);
-    votes[participant] = -1; // Initialize votes to -1 (not voted)
-    this.sessions.set(roomId, { participants: [participant], votes, roomName });
-    // this.notifyParticipants(roomId);
+    votes[userName] = -1; // Initialize votes to -1 (not voted)
+    this.sessions.set(roomId, { participants: [userName], votes, roomName });
+    console.log('sessions', this.sessions.get(roomId));
     return roomId;
   }
   async checkRoom(roomId: string, client: Socket) {
