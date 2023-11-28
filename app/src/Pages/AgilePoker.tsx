@@ -1,34 +1,47 @@
 import { useEffect, useState } from 'react';
 import { useWebSocket } from '../context/WebSocketContext';
-import { useLoaderData, useNavigate } from 'react-router-dom';
+import { useLoaderData, useLocation, useNavigate } from 'react-router-dom';
 import { usePoker } from '../context/PokerContext';
+// import type { SessionType } from '../types';
 
 export async function loader({ params }: any) {
   return params.roomId;
 }
+type SessionType = {
+  participants: string[];
+  votes: Record<string, number>;
+  roomName: string;
+};
+
+type RoomType = {
+  roomName: string;
+  userName: string;
+};
+
+const emptySession: SessionType = {
+  participants: [],
+  votes: {},
+  roomName: '',
+};
 
 export default function AgilePokerPage() {
-  const { socket, joinRoom, endAgilePoker, vote, connectToTheRoom } =
+  let location = useLocation();
+  const { isCreator, roomInfo } = usePoker();
+
+  const { socket, createRoom, endAgilePoker, vote, connectToTheRoom } =
     useWebSocket();
-  const {
-    userName,
-    roomName,
-    isCreator,
-    setRoomParticipants,
-    roomParticipants,
-  } = usePoker();
 
   const navigate = useNavigate();
+  const [pokerSession, setPokerSession] = useState<SessionType>(emptySession);
 
   const [sessionId, setSessionId] = useState('');
   const [participants, setParticipants] = useState<string[]>([]);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const roomId = useLoaderData() as string;
-  console.log('roomId from URL: ', roomId);
 
   useEffect(() => {
     if (socket) {
-      if (!userName) {
+      if (!roomInfo?.userName) {
         // check that room is not empty on the backend
         console.log('Checking room');
         socket.emit('checkRoom', { roomId }, (response: any) => {
@@ -46,31 +59,40 @@ export default function AgilePokerPage() {
         });
       }
       socket.on('connect', () => {
-        if (roomId && isCreator) {
-          console.log('Joining room');
-          joinRoom(roomId, userName, roomName);
+        if (roomId && location.state?.isHost) {
+          console.log('Starting new Agile Poker session room');
+          if (roomInfo?.userName && roomInfo?.roomName)
+            createRoom(roomId, roomInfo?.userName, roomInfo?.roomName);
         } else if (roomId) {
           console.log('Connecting to the room');
-          connectToTheRoom(roomId, userName);
+          if (roomInfo?.userName) connectToTheRoom(roomId, roomInfo?.userName);
         }
       });
       socket.on('disconnect', () => {
         console.log('Disconnected from WebSocket server');
       });
       socket.on(
+        'roomCreated',
+        ({ participants, votes, roomName }: SessionType) => {
+          console.log('Room created', participants, roomName, votes);
+          setPokerSession({ ...pokerSession, participants, votes, roomName });
+        },
+      );
+      socket.on(
         'agilePokerUpdate',
-        ({ sessionId, session }: { sessionId: string; session: any }) => {
+        ({ roomId, session }: { roomId: string; session: SessionType }) => {
           console.log('Agile Poker update', session);
-          setSessionId(sessionId);
-          setParticipants(session.participants);
+          setPokerSession({ ...session });
           console.log('session.votes: ', session.votes);
           if (Object.keys(session.votes).length !== 0)
             setVotes({ ...session.votes });
         },
       );
-      socket.on('userJoined', (participant: string) => {
-        console.log('Joined room', participant);
-        setRoomParticipants([...roomParticipants, participant]);
+      socket.on('userJoined', (session) => {
+        console.log('Joined room', session);
+        setPokerSession({
+          ...session,
+        });
       });
     }
     return () => {
@@ -81,37 +103,101 @@ export default function AgilePokerPage() {
         socket.off('userJoined');
       }
     };
-  }, [
-    socket,
-    isCreator,
-    joinRoom,
-    roomId,
-    userName,
-    connectToTheRoom,
-    setRoomParticipants,
-    roomParticipants,
-  ]);
+  }, [socket, isCreator, createRoom, roomId, connectToTheRoom]);
 
   const handleVote = (voteAmount: number) => {
-    if (roomName && userName) {
-      vote(roomName, userName, voteAmount);
+    if (roomInfo?.userName) {
+      vote(roomId, roomInfo?.userName, voteAmount);
     }
   };
-
+  console.log('roominfo', roomInfo);
+  console.log('pokerSession', pokerSession);
   return (
     <div className="bg-gray-100 min-h-screen flex items-center justify-center">
       <div className="bg-white p-8 rounded shadow-md w-96">
         <h1 className="text-2xl font-bold mb-4">Agile Poker Web App</h1>
 
         <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-2">Room: {roomName}</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            Room: {pokerSession.roomName}
+          </h2>
+          {pokerSession.participants.map((participant) => (
+            <div key={participant} className="flex flex-row justify-between">
+              <p>{participant}</p>
+              <p>{pokerSession.votes[participant]}</p>
+            </div>
+          ))}
           <h3 className="text-lg font-semibold mb-2">
-            Participants: {roomParticipants.join(', ')}
+            Participants: {pokerSession.participants.join(', ')}
+          </h3>
+          <h3 className="text-lg font-semibold mb-2">
+            Your name: {roomInfo.userName}
+          </h3>
+          <h3 className="text-lg font-semibold mb-2">
+            Your vote: {pokerSession.votes[roomInfo.userName]}
           </h3>
         </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Participants:</h3>
+        <div className="flex flex-col gap-2">
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(1)}
+          >
+            1
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(2)}
+          >
+            2
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(3)}
+          >
+            3
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(5)}
+          >
+            5
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(8)}
+          >
+            8
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(13)}
+          >
+            13
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(21)}
+          >
+            21
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(34)}
+          >
+            34
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(55)}
+          >
+            55
+          </button>
+          <button
+            className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2 px-4 rounded"
+            onClick={() => handleVote(89)}
+          >
+            89
+          </button>
         </div>
       </div>
     </div>

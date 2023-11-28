@@ -27,7 +27,11 @@ const router = createBrowserRouter([
   },
   {
     path: 'welcome',
-    element: <GetUsername />,
+    element: (
+      <WebSocketProvider>
+        <GetUsername />
+      </WebSocketProvider>
+    ),
     errorElement: <ErrorPage />,
   },
 ]);

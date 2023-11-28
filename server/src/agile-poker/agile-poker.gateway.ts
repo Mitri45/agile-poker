@@ -27,12 +27,12 @@ export class AgilePokerGateway
   @SubscribeMessage('createRoom')
   handleCreateRoom(
     @MessageBody()
-    data: { roomId: string; participant: string; roomName: string },
+    data: { roomId: string },
     @ConnectedSocket() client: Socket,
   ): void {
-    console.log('Creating a room with a name', data.roomName);
-    client.join(data.roomId);
+    console.log('Creating a room with ID', data.roomId);
     const session = this.agilePokerService.getSession(data.roomId);
+    client.join(data.roomId);
     this.server.to(data.roomId).emit('roomCreated', session);
   }
 
@@ -42,8 +42,11 @@ export class AgilePokerGateway
     data: { roomId: string; participant: string },
     @ConnectedSocket() client: Socket,
   ): void {
+    console.log('connectToTheRoom', data);
     client.join(data.roomId);
-    this.server.to(data.roomId).emit('userJoined', data.participant);
+    this.agilePokerService.updateParticipants(data.roomId, data.participant);
+    const session = this.agilePokerService.getSession(data.roomId);
+    this.server.to(data.roomId).emit('userJoined', session);
   }
 
   @SubscribeMessage('endAgilePoker')
@@ -61,20 +64,29 @@ export class AgilePokerGateway
     // check how many connections in the room
     const isRoomExist = rooms.get(data.roomId)?.size;
     console.log('isRoomExist', Boolean(isRoomExist));
-    return Boolean(isRoomExist);
+    if (isRoomExist) {
+      const session = this.agilePokerService.getSession(data.roomId);
+      console.log('session', session);
+
+      return { status: 'ok', roomName: session.roomName };
+    }
   }
 
   @SubscribeMessage('vote')
   handleVote(
     @MessageBody()
     data: {
-      sessionId: string;
+      roomId: string;
       participant: string;
       vote: number;
     },
   ) {
     console.log('vote');
     console.log('handleVote', data);
-    this.agilePokerService.vote(data.sessionId, data.participant, data.vote);
+    this.agilePokerService.vote(data.roomId, data.participant, data.vote);
+    const session = this.agilePokerService.getSession(data.roomId);
+    this.server
+      .to(data.roomId)
+      .emit('agilePokerUpdate', { roomId: data.roomId, session });
   }
 }

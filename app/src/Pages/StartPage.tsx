@@ -11,42 +11,39 @@ type StartPageInputs = {
 };
 
 export default function StartPage() {
-  const { userName, setUserName, roomName, setRoomName, setIsCreator } =
-    usePoker();
+  const { setIsCreator, setRoomInfo } = usePoker();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<StartPageInputs>();
 
-  const onSubmit: SubmitHandler<StartPageInputs> = (data) => console.log(data);
-
   const [showToast, setShowToast] = useState(false);
   const [message, setMessage] = useState('');
-  let location = useLocation();
+  let { state } = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (location.state && location.state.message) {
-      setMessage(location.state.message);
+    if (state && state.message) {
+      setMessage(state.message);
       setShowToast(true);
     }
   }, []);
 
-  const handleStartSession: SubmitHandler<StartPageInputs> = async (
+  const handlePrepareSession: SubmitHandler<StartPageInputs> = async (
     formData,
   ) => {
-    setRoomName(formData.roomName);
-    setUserName(formData.userName);
-    console.log('Starting session:', roomName, userName);
+    setRoomInfo({ roomName: formData.roomName, userName: formData.userName });
     try {
       const { data } = await axios.post('http://localhost:3001/getRoomID', {
-        roomName,
-        userName,
+        roomName: formData.roomName,
+        userName: formData.userName,
       });
       console.log('Room ID:', data.roomId);
       setIsCreator(true);
-      navigate(`/room/${data.roomId}`);
+      navigate(`/room/${data.roomId}`, {
+        state: { isHost: true },
+      });
     } catch (error) {
       console.log('Error:', error);
     }
@@ -59,7 +56,7 @@ export default function StartPage() {
           Agile Poker Start Page
         </h2>
         <form
-          onSubmit={handleSubmit(handleStartSession)}
+          onSubmit={handleSubmit(handlePrepareSession)}
           className="mt-8 flex flex-col max-w-md gap-x-4"
         >
           <div className="mb-5 bg-white rounded-md ">
