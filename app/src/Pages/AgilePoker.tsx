@@ -34,6 +34,7 @@ export default function AgilePokerPage() {
   const navigate = useNavigate();
   const [pokerSession, setPokerSession] = useState<SessionType>(emptySession);
   const [votes, setVotes] = useState<Record<string, number>>({});
+  console.log('votes: ', votes);
   const roomId = useLoaderData() as string;
 
   useEffect(() => {
@@ -120,9 +121,8 @@ export default function AgilePokerPage() {
       <div className="flex flex-col items-center">
         <div className="flex w-full justify-evenly">
           {pokerNumbers.map((rank) => (
-            <div className="flex justify-between">
+            <div key={rank} className="flex justify-between">
               <Card
-                key={rank}
                 rank={rank}
                 isSelected={rank === selectedCard}
                 onClick={() => handleVote(rank)}

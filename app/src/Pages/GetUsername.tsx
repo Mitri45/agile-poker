@@ -5,8 +5,7 @@ import { useWebSocket } from '../context/WebSocketContext';
 
 export default function GetUsername() {
   const { roomInfo, setRoomInfo } = usePoker();
-  const { socket, createRoom, endAgilePoker, vote, connectToTheRoom } =
-    useWebSocket();
+  const { connectToTheRoom } = useWebSocket();
 
   type GetUsernameInput = {
     userName: string;

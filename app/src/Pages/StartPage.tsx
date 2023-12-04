@@ -35,10 +35,13 @@ export default function StartPage() {
   ) => {
     setRoomInfo({ roomName: formData.roomName, userName: formData.userName });
     try {
-      const { data } = await axios.post('http://localhost:3001/getRoomID', {
-        roomName: formData.roomName,
-        userName: formData.userName,
-      });
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_SERVER}/getRoomID`,
+        {
+          roomName: formData.roomName,
+          userName: formData.userName,
+        },
+      );
       console.log('Room ID:', data.roomId);
       setIsCreator(true);
       navigate(`/room/${data.roomId}`, {
