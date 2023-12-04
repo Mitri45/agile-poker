@@ -12,6 +12,6 @@ async function bootstrap() {
   // Use custom IoAdapter for WebSocket
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  await app.listen(3001); // Use a different port if needed
+  await app.listen(process.env.SERVER_PORT);
 }
 bootstrap();
