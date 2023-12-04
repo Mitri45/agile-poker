@@ -8,6 +8,7 @@ import StartPage from './Pages/StartPage';
 import ErrorPage from './Pages/ErrorPage';
 import AgilePokerPage, { loader as roomIdLoader } from './Pages/AgilePoker';
 import GetUsername from './Pages/GetUsername';
+import Layout from './components/Layout';
 
 const router = createBrowserRouter([
   {
@@ -19,7 +20,9 @@ const router = createBrowserRouter([
     path: 'room/:roomId',
     element: (
       <WebSocketProvider>
-        <AgilePokerPage />
+        <Layout>
+          <AgilePokerPage />
+        </Layout>
       </WebSocketProvider>
     ),
     errorElement: <ErrorPage />,
