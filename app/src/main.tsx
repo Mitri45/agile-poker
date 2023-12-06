@@ -17,7 +17,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: 'room/:roomId',
+    path: '/room/:roomId',
     element: (
       <WebSocketProvider>
         <Layout>
@@ -29,7 +29,7 @@ const router = createBrowserRouter([
     loader: roomIdLoader,
   },
   {
-    path: 'welcome',
+    path: '/welcome',
     element: (
       <WebSocketProvider>
         <GetUsername />
