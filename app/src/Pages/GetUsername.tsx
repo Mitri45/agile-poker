@@ -1,65 +1,135 @@
-import { useLocation, useNavigate } from 'react-router-dom';
 import { usePoker } from '../context/PokerContext';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useWebSocket } from '../context/WebSocketContext';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { UserPlusIcon } from '@heroicons/react/24/solid';
 
-export default function GetUsername() {
+export default function GetUsername({
+  isOpen,
+  roomId,
+}: {
+  isOpen: boolean;
+  roomId: string;
+}) {
+  const [open, setOpen] = useState(isOpen);
+  const nameInput = useRef(null);
   const { roomInfo, setRoomInfo } = usePoker();
   const { connectToTheRoom } = useWebSocket();
 
   type GetUsernameInput = {
     userName: string;
   };
-  const navigate = useNavigate();
-  let location = useLocation();
   const {
     register,
     handleSubmit,
     formState: { errors },
+    control,
+    setFocus,
   } = useForm<GetUsernameInput>();
 
-  const handleJoinSession: SubmitHandler<GetUsernameInput> = async (
-    formData,
-  ) => {
-    setRoomInfo({ ...roomInfo, userName: formData.userName });
-    connectToTheRoom(location.state.roomId, formData.userName);
-    navigate(`/room/${location.state.roomId}`);
+  const handleJoinSession: SubmitHandler<GetUsernameInput> = (formData) => {
+    console.log('formData', formData);
+    setRoomInfo({
+      ...roomInfo,
+      userName: formData.userName,
+      roomId: roomId,
+    });
+    connectToTheRoom(roomId, formData.userName);
+    setOpen(false);
   };
 
+  useEffect(() => {
+    setFocus('userName');
+  }, [setFocus]);
+
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="max-w-xl lg:max-w-lg bg-gray-100 rounded-md shadow-lg  p-8">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          You are joining room {location.state.roomName}
-        </h2>
-        <form
-          onSubmit={handleSubmit(handleJoinSession)}
-          className="mt-8 flex flex-col max-w-md gap-x-4"
+    <Transition.Root show={open} as={Fragment}>
+      <Dialog
+        static
+        as="div"
+        className="relative z-10"
+        initialFocus={nameInput}
+        onClose={() => null}
+      >
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
         >
-          <div className="mb-5 bg-white rounded-md ">
-            <label htmlFor="email-address" className="sr-only">
-              Your Name
-            </label>
-            <input
-              {...register('userName', { required: true })}
-              id="userName"
-              name="userName"
-              type="text"
-              autoComplete="off"
-              required
-              className="w-full flex-auto border-0 bg-white/5 px-3.5 py-2  shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
-              placeholder="Enter your name"
-            />
-            {errors.userName && <span>This field is required</span>}
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                  <div className="sm:flex justify-start items-start sm:items-center">
+                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 sm:mx-0 sm:h-10 sm:w-10">
+                      <UserPlusIcon
+                        className="h-6 w-6 "
+                        aria-hidden="true"
+                        color="white"
+                      />
+                    </div>
+                    <div className="mt-3 sm:ml-6 sm:mt-0 sm:text-left">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-base text-center font-semibold leading-6 text-gray-900"
+                      >
+                        You are joining room {roomInfo.roomName}
+                      </Dialog.Title>
+                      <form
+                        onSubmit={handleSubmit(handleJoinSession)}
+                        className="my-8 flex max-w-md gap-x-4"
+                      >
+                        <div className="bg-white rounded-md ">
+                          <label htmlFor="email-address" className="sr-only">
+                            What is your name?
+                          </label>
+                          <input
+                            {...register('userName', {
+                              required: 'Please enter your name',
+                              pattern: /^[A-Za-z]+$/i,
+                            })}
+                            // ref={nameInput}
+                            className="w-full flex-auto bg-white/5 px-3.5 py-2 shadow-sm ring-1 ring-inset ring-white/10 focus:ring-1 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                            placeholder="What is your name?"
+                          />
+                          {errors.userName && (
+                            <span>This field is required</span>
+                          )}
+
+                          {JSON.stringify(errors)}
+                        </div>
+                        <button
+                          type="submit"
+                          className="flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold  shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                        >
+                          Join Agile Poker
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
-          <button
-            type="submit"
-            className="flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold  shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-          >
-            Join Agile Poker
-          </button>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
   );
 }

@@ -1,87 +1,56 @@
 import { useState, useEffect } from 'react';
+import { useWebSocket } from '../context/WebSocketContext';
+import { usePoker } from '../context/PokerContext';
 
 const CountdownTimer = () => {
-  const [minutes, setMinutes] = useState(0);
-  const [seconds, setSeconds] = useState(0);
+  const { serverMessage, socket } = useWebSocket();
+  const [countdown, setCountdown] = useState(30);
+  const { roomInfo, setRoomInfo } = usePoker();
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
-    let intervalId: number;
-
-    if (isActive) {
-      intervalId = setInterval(() => {
-        if (seconds === 0) {
-          if (minutes === 0) {
-            clearInterval(intervalId);
-            setIsActive(false);
-            console.log('Countdown timer expired!');
-          } else {
-            setMinutes((prevMinutes) => prevMinutes - 1);
-            setSeconds(59);
-          }
-        } else {
-          setSeconds((prevSeconds) => prevSeconds - 1);
-        }
-      }, 1000);
+    console.log(serverMessage);
+    console.log('CountdownTimer: useEffect');
+    console.log('serverMessage', serverMessage);
+    if (serverMessage.has('countdown')) {
+      const seconds = serverMessage.get('countdown') as number;
+      setCountdown(seconds);
+      if (seconds === 0) {
+        setRoomInfo({ ...roomInfo, countdownState: 'finished' });
+        setIsActive(false);
+        setCountdown(30);
+      }
     }
+  }, [serverMessage]);
 
-    return () => clearInterval(intervalId);
-  }, [isActive, minutes, seconds]);
-
-  const startTimer = () => {
-    if (minutes > 0 || seconds > 0) {
-      setIsActive(true);
-    }
+  const startCountdown = () => {
+    setIsActive(true);
+    socket &&
+      socket.emit('startCountdown', {
+        roomId: roomInfo.roomId,
+        countdownDuration: 30,
+      });
   };
 
-  const stopTimer = () => {
-    setIsActive(false);
+  const resetCountdown = () => {
+    socket && socket.emit('resetCountdown', roomInfo.roomId);
   };
 
   return (
-    <div className="flex items-end">
-      <div className="max-w-md p-6 bg-white border rounded-lg shadow-lg">
-        <div className="mb-4">
-          <label className="block text-sm font-bold mb-2">
-            Minutes:
-            <input
-              className="border p-2 w-full"
-              type="number"
-              value={minutes}
-              onChange={(e) => setMinutes(parseInt(e.target.value))}
-            />
-          </label>
-          <label className="block text-sm font-bold mb-2">
-            Seconds:
-            <input
-              className="border p-2 w-full"
-              type="number"
-              value={seconds}
-              onChange={(e) => setSeconds(parseInt(e.target.value))}
-            />
-          </label>
-        </div>
-        <div className="mb-4">
-          <button
-            className="bg-blue-500 text-white p-2 rounded mr-2"
-            onClick={startTimer}
-          >
-            Start
-          </button>
-          <button
-            className="bg-red-500 text-white p-2 rounded"
-            onClick={stopTimer}
-          >
-            Stop
-          </button>
-        </div>
-        <div>
-          <p className="text-lg">
-            Time remaining: {String(minutes).padStart(2, '0')}:
-            {String(seconds).padStart(2, '0')}
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col items-center mt-8">
+      <p className="text-4xl mb-4">
+        <span className="text-red-500">{countdown}</span> sec.
+      </p>
+      {roomInfo.isHost && (
+        <button
+          type="button"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-slate-400 disabled:hover:bg-slate-400 disabled:cursor-not-allowed"
+          onClick={startCountdown}
+          disabled={isActive}
+        >
+          Start Countdown
+        </button>
+      )}
     </div>
   );
 };

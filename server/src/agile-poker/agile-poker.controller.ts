@@ -11,7 +11,7 @@ export class AgilePokerController {
     console.log('startAgilePoker');
     console.log(body);
     // Start websocket server for this roomID
-    const uniqueRoomUrl = this.agilePokerService.prepareSession(body);
+    const uniqueRoomUrl = this.agilePokerService.prepareSession();
     return { status: 'ok', roomId: uniqueRoomUrl };
   }
 

@@ -1,41 +1,43 @@
 import React, { createContext, useContext, useState } from 'react';
+import { SessionType } from '../types';
+
+export type RoomInfo = {
+  roomName: string;
+  userName: string;
+  roomId: string;
+  isHost?: boolean;
+  countdownState: 'stopped' | 'started' | 'finished';
+};
 
 interface PokerContextProps {
-  roomInfo: RoomType;
-  setRoomInfo: (roomInfo: RoomType) => void;
-  isCreator: boolean;
-  setIsCreator: (isCreator: boolean) => void;
+  roomInfo: RoomInfo;
+  setRoomInfo: (roomInfo: RoomInfo) => void;
   pokerSession: SessionType;
   setPokerSession: (pokerSession: SessionType) => void;
 }
 
 const PokerContext = createContext<PokerContextProps>({
-  isCreator: false,
-  setIsCreator: () => {},
-  roomInfo: { roomName: '', userName: '' },
+  roomInfo: {
+    roomName: '',
+    userName: '',
+    roomId: '',
+    countdownState: 'stopped',
+  },
   setRoomInfo: () => {},
   pokerSession: { participants: [], votes: {} },
   setPokerSession: () => {},
 });
 
-type SessionType = {
-  participants: string[];
-  votes: Record<string, number>;
-};
-
-type RoomType = {
-  roomName: string;
-  userName: string;
-};
-
 export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
   children,
 }) => {
-  const [roomInfo, setRoomInfo] = useState<RoomType>({
+  const [roomInfo, setRoomInfo] = useState<RoomInfo>({
     roomName: '',
     userName: '',
+    roomId: '',
+    countdownState: 'stopped',
+    isHost: false,
   });
-  const [isCreator, setIsCreator] = useState(false);
   const [pokerSession, setPokerSession] = useState<SessionType>({
     participants: [],
     votes: {},
@@ -43,8 +45,6 @@ export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
   return (
     <PokerContext.Provider
       value={{
-        isCreator,
-        setIsCreator,
         roomInfo,
         setRoomInfo,
         pokerSession,

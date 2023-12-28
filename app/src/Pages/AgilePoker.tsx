@@ -5,100 +5,59 @@ import { usePoker } from '../context/PokerContext';
 import Card from '../components/Card';
 import Timer from '../components/Timer';
 import DynamicParticipantList from '../components/Participants';
+import GetUsername from './GetUsername';
 
 export async function loader({ params }: any) {
   return params.roomId;
 }
-const pokerNumbers = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
-
-type SessionType = {
-  participants: string[];
-  votes: Record<string, number>;
-  roomName: string;
-};
-
-const emptySession: SessionType = {
-  participants: [],
-  votes: {},
-  roomName: '',
-};
+const pokerNumbers = [1, 2, 3, 5, 8, 13, 21, 34];
 
 export default function AgilePokerPage() {
   let location = useLocation();
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
+  const [votedCard, setVotedCard] = useState<number | undefined>();
+  const [userJoining, setUserJoining] = useState(false);
+  const [loading, setLoading] = useState(true);
+  console.log('votedCard: ', votedCard);
 
-  const { isCreator, roomInfo } = usePoker();
+  const { roomInfo, pokerSession } = usePoker();
 
-  const { socket, createRoom, vote, connectToTheRoom } = useWebSocket();
+  const { socket, createRoom, vote } = useWebSocket();
 
   const navigate = useNavigate();
-  const [pokerSession, setPokerSession] = useState<SessionType>(emptySession);
-  const [votes, setVotes] = useState<Record<string, number>>({});
-  console.log('votes: ', votes);
   const roomId = useLoaderData() as string;
 
   useEffect(() => {
-    if (socket) {
+    // Checking that socket connected and we have roomId from the URL
+    if (socket && roomId) {
+      // Anon user used room URL
       if (!roomInfo?.userName) {
         // check that room is not empty on the backend
         console.log('Checking room');
         socket.emit('checkRoom', { roomId }, (response: any) => {
           console.log('checkRoom response: ', response);
-          if (!response) {
+          if (response) {
+            console.log('getting username');
+            setLoading(false);
+            setUserJoining(true);
+          } else {
+            // No such room exist - starting new session
             navigate(`/`, {
               state: { message: 'Room you were trying to access is empty' },
             });
-            return;
-          } else {
-            navigate(`/welcome`, {
-              state: { roomId, roomName: response.roomName },
-            });
           }
         });
-      }
-      socket.on('connect', () => {
-        if (roomId && location.state?.isHost) {
-          console.log('Starting new Agile Poker session room');
-          if (roomInfo?.userName && roomInfo?.roomName)
-            createRoom(roomId, roomInfo?.userName, roomInfo?.roomName);
-        } else if (roomId) {
-          console.log('Connecting to the room');
-          if (roomInfo?.userName) connectToTheRoom(roomId, roomInfo?.userName);
+      } else {
+        // Create room as a host
+        console.log('Room name exist', pokerSession);
+        if (location.state?.isHost && pokerSession.participants.length === 0) {
+          console.log('Creating room');
+          createRoom(roomId, roomInfo);
+          setLoading(false);
         }
-      });
-      socket.on('disconnect', () => {
-        console.log('Disconnected from WebSocket server');
-      });
-      socket.on(
-        'roomCreated',
-        ({ participants, votes, roomName }: SessionType) => {
-          console.log('Room created', participants, roomName, votes);
-          setPokerSession({ ...pokerSession, participants, votes, roomName });
-        },
-      );
-      socket.on('agilePokerUpdate', ({ session }: { session: SessionType }) => {
-        console.log('Agile Poker update', session);
-        setPokerSession({ ...session });
-        console.log('session.votes: ', session.votes);
-        if (Object.keys(session.votes).length !== 0)
-          setVotes({ ...session.votes });
-      });
-      socket.on('userJoined', (session) => {
-        console.log('Joined room', session);
-        setPokerSession({
-          ...session,
-        });
-      });
-    }
-    return () => {
-      if (socket) {
-        socket.off('connect');
-        socket.off('disconnect');
-        socket.off('agilePokerUpdate');
-        socket.off('userJoined');
       }
-    };
-  }, [socket, isCreator, createRoom, roomId, connectToTheRoom]);
+    }
+  }, [socket, createRoom, roomId, pokerSession]);
 
   const handleVote = (rank: number) => {
     setSelectedCard(rank === selectedCard ? null : rank);
@@ -106,38 +65,46 @@ export default function AgilePokerPage() {
   const submitVote = () => {
     vote(roomId, roomInfo?.userName, selectedCard!);
   };
+  console.log('pokerSession: ', pokerSession);
 
   return (
-    <div className="flex-grow flex flex-col items-stretch justify-around">
-      <div>
-        <h2 className="text-3xl text-center font-semibold mb-10 p-5">
-          {pokerSession.roomName}
-        </h2>
-        <div className="flex items-start justify-between px-10">
-          <DynamicParticipantList session={pokerSession} />
-          <Timer />
-        </div>
-      </div>
-      <div className="flex flex-col items-center">
-        <div className="flex w-full justify-evenly">
-          {pokerNumbers.map((rank) => (
-            <div key={rank} className="flex justify-between">
-              <Card
-                rank={rank}
-                isSelected={rank === selectedCard}
-                onClick={() => handleVote(rank)}
-              />
+    <div className="flex-grow flex flex-col items-center justify-around">
+      {loading ? (
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500 border-solid"></div>
+      ) : (
+        <div>
+          <GetUsername isOpen={userJoining} roomId={roomId} />
+          <div>
+            <h2 className="text-3xl text-center font-semibold mb-10 p-5">
+              {roomInfo.roomName}
+            </h2>
+            <div className="flex items-start justify-between px-10">
+              <DynamicParticipantList session={pokerSession} />
+              <Timer />
             </div>
-          ))}
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="flex w-full justify-evenly">
+              {pokerNumbers.map((rank) => (
+                <div key={rank} className="flex justify-between">
+                  <Card
+                    rank={rank}
+                    isSelected={rank === selectedCard}
+                    onClick={() => handleVote(rank)}
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="btn mt-10 bg-blue-500 text-white p-2 rounded w-[200px]"
+              onClick={() => submitVote()}
+            >
+              Vote
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="btn mt-10 bg-blue-500 text-white p-2 rounded w-[200px]"
-          onClick={() => submitVote()}
-        >
-          Vote
-        </button>
-      </div>
+      )}
     </div>
   );
 }
