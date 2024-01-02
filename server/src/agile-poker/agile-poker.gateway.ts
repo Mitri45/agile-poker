@@ -27,8 +27,19 @@ export class AgilePokerGateway
 
   handleDisconnect(client: ExtendedSocket) {
     console.log(`Client disconnected: ${client.id}`);
+    const roomId = Object.keys(client.rooms)[1];
+    const session = this.agilePokerService.getSession(roomId);
+    if (session) {
+      const { participants } = session;
+      const participant = participants.find((p) => p === client.id);
+      if (participant) {
+        this.agilePokerService.updateParticipants(roomId, participant);
+        const session = this.agilePokerService.getSession(roomId);
+        console.log('userLeft', session);
+        this.server.to(roomId).emit('userLeft', session);
+      }
+    }
     if (client.host === client.id) {
-      console.log('host disconnected clearing');
       if (AgilePokerGateway.countdownInterval) {
         clearInterval(AgilePokerGateway.countdownInterval);
         AgilePokerGateway.countdownInterval = null;
@@ -42,7 +53,6 @@ export class AgilePokerGateway
     { roomId, roomInfo }: { roomId: string; roomInfo: RoomInfo },
     @ConnectedSocket() client: ExtendedSocket & { host: string },
   ): void {
-    console.log('Creating a room with ID', roomId);
     const { roomName, userName } = roomInfo;
     const votes: Record<string, number> = {};
     votes[userName] = -1; // Initialize votes to -1 (not voted)
@@ -53,7 +63,6 @@ export class AgilePokerGateway
     });
     client.host = client.id;
     const session = AgilePokerService.sessions.get(roomId);
-    console.log('session', session);
     client.join(roomId);
     this.server.to(roomId).emit('roomCreated', session);
   }
@@ -64,7 +73,6 @@ export class AgilePokerGateway
     data: { roomId: string; participant: string },
     @ConnectedSocket() client: ExtendedSocket,
   ): void {
-    console.log('connectToTheRoom', data);
     client.join(data.roomId);
     this.agilePokerService.updateParticipants(data.roomId, data.participant);
     const session = this.agilePokerService.getSession(data.roomId);
@@ -76,12 +84,11 @@ export class AgilePokerGateway
     const rooms = this.server.sockets.adapter.rooms;
     // check how many connections in the room
     const isRoomExist = rooms.get(data.roomId)?.size;
-    console.log('isRoomExist', Boolean(isRoomExist));
     if (isRoomExist) {
       const session = this.agilePokerService.getSession(data.roomId);
-      console.log('session', session);
-
       return { status: 'ok', roomName: session.roomName };
+    } else {
+      return { status: 'error', error: 'Room does not exist' };
     }
   }
 
@@ -110,19 +117,13 @@ export class AgilePokerGateway
       countdownDuration: number;
     },
   ): void {
-    console.log('startCountdown', roomId);
     const session = this.agilePokerService.getSession(roomId);
-    console.log('session', session);
-    console.log(
-      'AgilePokerGateway.countdownInterval',
-      AgilePokerGateway.countdownInterval,
-    );
     if (session) {
       if (!AgilePokerGateway.countdownInterval) {
+        this.server.to(roomId).emit('startCountdown');
         AgilePokerGateway.countdownInterval = setInterval(() => {
           this.server.to(roomId).emit('countdown', countdownDuration);
           countdownDuration--;
-          console.log('this.countdownDuration', countdownDuration);
           if (countdownDuration < 0) {
             clearInterval(AgilePokerGateway.countdownInterval);
             AgilePokerGateway.countdownInterval = null;

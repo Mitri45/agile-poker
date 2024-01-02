@@ -24,12 +24,10 @@ export default function GetUsername({
     register,
     handleSubmit,
     formState: { errors },
-    control,
     setFocus,
   } = useForm<GetUsernameInput>();
 
   const handleJoinSession: SubmitHandler<GetUsernameInput> = (formData) => {
-    console.log('formData', formData);
     setRoomInfo({
       ...roomInfo,
       userName: formData.userName,

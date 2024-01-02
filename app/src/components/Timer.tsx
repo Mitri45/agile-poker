@@ -1,39 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { usePoker } from '../context/PokerContext';
+import { CountdownState } from '../../../types';
 
 const CountdownTimer = () => {
-  const { serverMessage, socket } = useWebSocket();
+  const { socket } = useWebSocket();
   const [countdown, setCountdown] = useState(30);
-  const { roomInfo, setRoomInfo } = usePoker();
+  const { roomInfo, setCountdownState } = usePoker();
+
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
-    console.log(serverMessage);
-    console.log('CountdownTimer: useEffect');
-    console.log('serverMessage', serverMessage);
-    if (serverMessage.has('countdown')) {
-      const seconds = serverMessage.get('countdown') as number;
-      setCountdown(seconds);
-      if (seconds === 0) {
-        setRoomInfo({ ...roomInfo, countdownState: 'finished' });
-        setIsActive(false);
-        setCountdown(30);
-      }
+    if (socket) {
+      socket.on('startCountdown', () => {
+        setCountdownState(CountdownState.Started);
+      });
+      socket.on('countdown', (value: number) => {
+        setCountdown(value);
+        if (value === 0) {
+          setIsActive(false);
+          setCountdownState(CountdownState.Finished);
+          setCountdown(30);
+        }
+      });
     }
-  }, [serverMessage]);
+  }, []);
 
   const startCountdown = () => {
     setIsActive(true);
-    socket &&
+    if (socket) {
       socket.emit('startCountdown', {
         roomId: roomInfo.roomId,
-        countdownDuration: 30,
+        countdownDuration: 5,
       });
-  };
-
-  const resetCountdown = () => {
-    socket && socket.emit('resetCountdown', roomInfo.roomId);
+    }
   };
 
   return (

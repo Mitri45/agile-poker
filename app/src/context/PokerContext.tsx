@@ -1,19 +1,20 @@
 import React, { createContext, useContext, useState } from 'react';
 import { SessionType } from '../types';
+import { CountdownState } from '../../../types';
 
 export type RoomInfo = {
   roomName: string;
   userName: string;
   roomId: string;
   isHost?: boolean;
-  countdownState: 'stopped' | 'started' | 'finished';
 };
-
 interface PokerContextProps {
   roomInfo: RoomInfo;
   setRoomInfo: (roomInfo: RoomInfo) => void;
   pokerSession: SessionType;
   setPokerSession: (pokerSession: SessionType) => void;
+  countdownState: CountdownState;
+  setCountdownState: (state: CountdownState) => void;
 }
 
 const PokerContext = createContext<PokerContextProps>({
@@ -21,11 +22,12 @@ const PokerContext = createContext<PokerContextProps>({
     roomName: '',
     userName: '',
     roomId: '',
-    countdownState: 'stopped',
   },
   setRoomInfo: () => {},
   pokerSession: { participants: [], votes: {} },
   setPokerSession: () => {},
+  countdownState: CountdownState.Stopped,
+  setCountdownState: () => {},
 });
 
 export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
@@ -35,13 +37,17 @@ export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
     roomName: '',
     userName: '',
     roomId: '',
-    countdownState: 'stopped',
     isHost: false,
   });
+
   const [pokerSession, setPokerSession] = useState<SessionType>({
     participants: [],
     votes: {},
   });
+  const [countdownState, setCountdownState] = useState<CountdownState>(
+    CountdownState.Stopped,
+  );
+
   return (
     <PokerContext.Provider
       value={{
@@ -49,6 +55,8 @@ export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
         setRoomInfo,
         pokerSession,
         setPokerSession,
+        countdownState,
+        setCountdownState,
       }}
     >
       {children}

@@ -5,7 +5,7 @@ import { usePoker } from '../context/PokerContext';
 import Card from '../components/Card';
 import Timer from '../components/Timer';
 import DynamicParticipantList from '../components/Participants';
-import GetUsername from './GetUsername';
+import GetUsername from '../components/GetUsername';
 
 export async function loader({ params }: any) {
   return params.roomId;
@@ -13,19 +13,21 @@ export async function loader({ params }: any) {
 const pokerNumbers = [1, 2, 3, 5, 8, 13, 21, 34];
 
 export default function AgilePokerPage() {
-  let location = useLocation();
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
-  const [votedCard, setVotedCard] = useState<number | undefined>();
   const [userJoining, setUserJoining] = useState(false);
-  const [loading, setLoading] = useState(true);
-  console.log('votedCard: ', votedCard);
+  const [isLoading, setIsLoading] = useState(true);
 
+  const { state } = useLocation();
+  const { socket } = useWebSocket();
   const { roomInfo, pokerSession } = usePoker();
-
-  const { socket, createRoom, vote } = useWebSocket();
-
   const navigate = useNavigate();
   const roomId = useLoaderData() as string;
+
+  useEffect(() => {
+    if (state) {
+      setIsLoading(state?.isLoading);
+    }
+  }, []);
 
   useEffect(() => {
     // Checking that socket connected and we have roomId from the URL
@@ -33,43 +35,26 @@ export default function AgilePokerPage() {
       // Anon user used room URL
       if (!roomInfo?.userName) {
         // check that room is not empty on the backend
-        console.log('Checking room');
         socket.emit('checkRoom', { roomId }, (response: any) => {
-          console.log('checkRoom response: ', response);
-          if (response) {
-            console.log('getting username');
-            setLoading(false);
+          if (response && response.status === 'ok') {
+            setIsLoading(false);
             setUserJoining(true);
-          } else {
+          }
+          if (response && response.status === 'error') {
             // No such room exist - starting new session
             navigate(`/`, {
-              state: { message: 'Room you were trying to access is empty' },
+              state: {
+                message: "Room you were trying to access doesn't exist",
+              },
             });
           }
         });
-      } else {
-        // Create room as a host
-        console.log('Room name exist', pokerSession);
-        if (location.state?.isHost && pokerSession.participants.length === 0) {
-          console.log('Creating room');
-          createRoom(roomId, roomInfo);
-          setLoading(false);
-        }
       }
     }
-  }, [socket, createRoom, roomId, pokerSession]);
-
-  const handleVote = (rank: number) => {
-    setSelectedCard(rank === selectedCard ? null : rank);
-  };
-  const submitVote = () => {
-    vote(roomId, roomInfo?.userName, selectedCard!);
-  };
-  console.log('pokerSession: ', pokerSession);
-
+  }, [socket, roomId]);
   return (
     <div className="flex-grow flex flex-col items-center justify-around">
-      {loading ? (
+      {isLoading ? (
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500 border-solid"></div>
       ) : (
         <div>
@@ -90,18 +75,12 @@ export default function AgilePokerPage() {
                   <Card
                     rank={rank}
                     isSelected={rank === selectedCard}
-                    onClick={() => handleVote(rank)}
+                    setSelectedCard={setSelectedCard}
+                    selectedCard={selectedCard}
                   />
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              className="btn mt-10 bg-blue-500 text-white p-2 rounded w-[200px]"
-              onClick={() => submitVote()}
-            >
-              Vote
-            </button>
           </div>
         </div>
       )}

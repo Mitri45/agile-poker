@@ -7,7 +7,6 @@ import { PokerProvider } from './context/PokerContext';
 import StartPage from './Pages/StartPage';
 import ErrorPage from './Pages/ErrorPage';
 import AgilePokerPage, { loader as roomIdLoader } from './Pages/AgilePoker';
-import GetUsername from './Pages/GetUsername';
 import Layout from './components/Layout';
 
 const router = createBrowserRouter([
@@ -19,30 +18,21 @@ const router = createBrowserRouter([
   {
     path: '/room/:roomId',
     element: (
-      <WebSocketProvider>
-        <Layout>
-          <AgilePokerPage />
-        </Layout>
-      </WebSocketProvider>
+      <Layout>
+        <AgilePokerPage />
+      </Layout>
     ),
     errorElement: <ErrorPage />,
     loader: roomIdLoader,
-  },
-  {
-    path: '/welcome',
-    element: (
-      <WebSocketProvider>
-        <GetUsername />
-      </WebSocketProvider>
-    ),
-    errorElement: <ErrorPage />,
   },
 ]);
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <PokerProvider>
-      <RouterProvider router={router} />
+      <WebSocketProvider>
+        <RouterProvider router={router} />
+      </WebSocketProvider>
     </PokerProvider>
   </React.StrictMode>,
 );

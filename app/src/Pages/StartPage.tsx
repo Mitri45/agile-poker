@@ -55,7 +55,7 @@ export default function StartPage() {
       setRoomInfo(roomInfo);
       createRoom(data.roomId, roomInfo);
       navigate(`/room/${data.roomId}`, {
-        state: { isHost: true },
+        state: { isLoading: false },
       });
     } catch (error) {
       console.log('Error:', error);

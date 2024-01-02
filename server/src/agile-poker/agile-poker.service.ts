@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { WebSocketServer } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { v5 as uuidv5 } from 'uuid';
 import { Session } from '../../../types';
 
@@ -17,15 +17,7 @@ export class AgilePokerService {
   prepareSession(): string {
     // Generate unique room ID for URL
     const roomId = uuidv5('Agile poker', uuidv5.URL);
-    console.log(roomId);
     return roomId;
-  }
-
-  async checkRoom(roomId: string, client: Socket) {
-    console.log('Checking room ' + client);
-    const roomConnections = await client.in(roomId).fetchSockets();
-    console.log('Clients in the room', roomConnections);
-    return roomConnections;
   }
 
   updateParticipants(roomId: string, participant: string): void {
@@ -37,7 +29,6 @@ export class AgilePokerService {
   }
 
   vote(roomId: string, participant: string, vote: number): void {
-    console.log('vote sessions', AgilePokerService.sessions);
     const session = AgilePokerService.sessions.get(roomId);
     if (session && session.participants.includes(participant)) {
       session.votes[participant] = vote;
