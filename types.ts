@@ -12,8 +12,21 @@ export type RoomInfo = {
     countdownState: CountdownState;
   };
 
-  export type Session = {
-    participants: string[];
-    votes: Record<string, number>;
+  export type SessionType = {
+    participants: Map<string, string>;
+    votes: Map<string, number>;
     roomName: string;
   };
+  
+  
+  export interface PokerContextProps {
+    clientUUID: string;
+    roomInfo: RoomInfo;
+    setRoomInfo: (roomInfo: RoomInfo) => void;
+    pokerSession: SessionType;
+    setPokerSession: (pokerSession: SessionType) => void;
+    countdownState: CountdownState;
+    setCountdownState: (state: CountdownState) => void;
+    selectedCard: number | null;
+    setSelectedCard: (card: number | null) => void;
+  }

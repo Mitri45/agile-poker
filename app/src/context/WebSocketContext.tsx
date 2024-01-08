@@ -7,16 +7,20 @@ import {
   PropsWithChildren,
 } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { RoomInfo, usePoker } from './PokerContext';
-import { Session } from '../../../types';
-import { Navigate } from 'react-router-dom';
+import { usePoker } from './PokerContext';
+import { RoomInfo, SessionType } from '../../../types';
+import { redirect } from 'react-router-dom';
 
 interface WebSocketContextProps {
   socket: Socket | null;
   createRoom: (roomId: string, roomInfo: RoomInfo) => void;
   endAgilePoker: (roomId: string) => void;
   vote: (roomId: string, participant: string, vote: number | null) => void;
-  connectToTheRoom: (roomId: string, participant: string) => void;
+  connectToTheRoom: (
+    roomId: string,
+    userName: string,
+    clientUUID: string,
+  ) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextProps>({
@@ -29,7 +33,15 @@ const WebSocketContext = createContext<WebSocketContextProps>({
 
 export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const { setPokerSession } = usePoker();
+  const { setPokerSession, clientUUID } = usePoker();
+
+  function deserializedSessionInfo(sessionInfo: SessionType) {
+    return {
+      ...sessionInfo,
+      participants: new Map(sessionInfo.participants),
+      votes: new Map(sessionInfo.votes),
+    };
+  }
 
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_SERVER, {
@@ -39,20 +51,16 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     if (newSocket) {
       newSocket.on('disconnect', () => {
         console.log('Disconnected from WebSocket server');
+        redirect('/');
       });
-      newSocket.on('userLeft', (sessionInfo: Session) => {
-        console.log('userLeft', sessionInfo);
+      newSocket.on('roomCreated', (sessionInfo: SessionType) => {
+        setPokerSession(deserializedSessionInfo(sessionInfo));
       });
-      newSocket.on('roomCreated', (sessionInfo: Session) => {
-        setPokerSession(sessionInfo);
+      newSocket.on('agilePokerUpdate', (sessionInfo: SessionType) => {
+        setPokerSession(deserializedSessionInfo(sessionInfo));
       });
-      newSocket.on('agilePokerUpdate', (session: Session) => {
-        setPokerSession({ ...session });
-      });
-      newSocket.on('userJoined', (session) => {
-        setPokerSession({
-          ...session,
-        });
+      newSocket.on('userJoined', (sessionInfo) => {
+        setPokerSession(deserializedSessionInfo(sessionInfo));
       });
     }
     return () => {
@@ -62,13 +70,17 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
   const createRoom = (roomId: string, roomInfo: RoomInfo) => {
     if (socket) {
-      socket.emit('createRoom', { roomId, roomInfo });
+      socket.emit('createRoom', { roomId, roomInfo, clientUUID });
     }
   };
 
-  const connectToTheRoom = (roomId: string, participant: string) => {
+  const connectToTheRoom = (
+    roomId: string,
+    userName: string,
+    clientUUID: string,
+  ) => {
     if (socket) {
-      socket.emit('connectToTheRoom', { roomId, participant });
+      socket.emit('connectToTheRoom', { roomId, userName, clientUUID });
     }
   };
 
@@ -100,3 +112,5 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 };
 
 export const useWebSocket = () => useContext(WebSocketContext);
+
+//TODO: instead of participant names track Client.id everywhere

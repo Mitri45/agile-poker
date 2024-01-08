@@ -1,18 +1,21 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { usePoker } from '../context/PokerContext';
 import { CountdownState } from '../../../types';
 
 const CountdownTimer = () => {
   const { socket } = useWebSocket();
-  const [countdown, setCountdown] = useState(30);
-  const { roomInfo, setCountdownState } = usePoker();
+  const countdownDuration = 10;
+  const [countdown, setCountdown] = useState(countdownDuration);
+  const { roomInfo, setCountdownState, countdownState, setSelectedCard } =
+    usePoker();
 
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     if (socket) {
       socket.on('startCountdown', () => {
+        setSelectedCard(null);
         setCountdownState(CountdownState.Started);
       });
       socket.on('countdown', (value: number) => {
@@ -20,7 +23,7 @@ const CountdownTimer = () => {
         if (value === 0) {
           setIsActive(false);
           setCountdownState(CountdownState.Finished);
-          setCountdown(30);
+          setCountdown(countdownDuration);
         }
       });
     }
@@ -31,25 +34,42 @@ const CountdownTimer = () => {
     if (socket) {
       socket.emit('startCountdown', {
         roomId: roomInfo.roomId,
-        countdownDuration: 5,
+        countdownDuration,
       });
     }
   };
-
   return (
-    <div className="flex flex-col items-center mt-8">
-      <p className="text-4xl mb-4">
-        <span className="text-red-500">{countdown}</span> sec.
+    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
+      {!roomInfo.isHost && (
+        <h2 className="text-2xl font-bold text-center mb-4 dark:text-gray-200">
+          {countdownState === CountdownState.Started
+            ? 'Voting in process'
+            : 'Host will start the countdown'}
+        </h2>
+      )}
+      <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
+        Cast your vote before the timer runs out!
       </p>
-      {roomInfo.isHost && (
-        <button
-          type="button"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-slate-400 disabled:hover:bg-slate-400 disabled:cursor-not-allowed"
-          onClick={startCountdown}
-          disabled={isActive}
+      <div className="flex items-center justify-center mb-8">
+        <div
+          className={`flex items-center justify-center text-white rounded-full w-20 h-20  ${
+            countdown < 5 ? 'bg-red-500' : 'bg-green-500'
+          }`}
         >
-          Start Countdown
-        </button>
+          <p className="text-2xl font-bold">{countdown}</p>
+        </div>
+      </div>
+      {roomInfo.isHost && (
+        <div className="space-y-4">
+          <button
+            onClick={startCountdown}
+            disabled={isActive}
+            type="button"
+            className="w-full py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-slate-400"
+          >
+            {isActive ? 'Voting in progress' : 'Start countdown'}
+          </button>
+        </div>
       )}
     </div>
   );

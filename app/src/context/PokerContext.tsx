@@ -1,33 +1,26 @@
 import React, { createContext, useContext, useState } from 'react';
-import { SessionType } from '../types';
-import { CountdownState } from '../../../types';
-
-export type RoomInfo = {
-  roomName: string;
-  userName: string;
-  roomId: string;
-  isHost?: boolean;
-};
-interface PokerContextProps {
-  roomInfo: RoomInfo;
-  setRoomInfo: (roomInfo: RoomInfo) => void;
-  pokerSession: SessionType;
-  setPokerSession: (pokerSession: SessionType) => void;
-  countdownState: CountdownState;
-  setCountdownState: (state: CountdownState) => void;
-}
+import {
+  CountdownState,
+  PokerContextProps,
+  RoomInfo,
+  SessionType,
+} from '../../../types';
 
 const PokerContext = createContext<PokerContextProps>({
   roomInfo: {
     roomName: '',
     userName: '',
     roomId: '',
+    countdownState: CountdownState.Stopped,
   },
+  clientUUID: '',
   setRoomInfo: () => {},
-  pokerSession: { participants: [], votes: {} },
+  pokerSession: { participants: new Map(), votes: new Map(), roomName: '' },
   setPokerSession: () => {},
   countdownState: CountdownState.Stopped,
   setCountdownState: () => {},
+  selectedCard: 0,
+  setSelectedCard: () => {},
 });
 
 export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
@@ -38,16 +31,18 @@ export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
     userName: '',
     roomId: '',
     isHost: false,
+    countdownState: CountdownState.Stopped,
   });
 
   const [pokerSession, setPokerSession] = useState<SessionType>({
-    participants: [],
-    votes: {},
+    participants: new Map(),
+    votes: new Map(),
+    roomName: '',
   });
   const [countdownState, setCountdownState] = useState<CountdownState>(
     CountdownState.Stopped,
   );
-
+  const [selectedCard, setSelectedCard] = useState<number | null>(null);
   return (
     <PokerContext.Provider
       value={{
@@ -57,6 +52,9 @@ export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
         setPokerSession,
         countdownState,
         setCountdownState,
+        selectedCard,
+        setSelectedCard,
+        clientUUID: localStorage.getItem('clientUUID')!,
       }}
     >
       {children}

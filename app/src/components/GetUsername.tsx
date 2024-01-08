@@ -3,7 +3,6 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { useWebSocket } from '../context/WebSocketContext';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { UserPlusIcon } from '@heroicons/react/24/solid';
 
 export default function GetUsername({
   isOpen,
@@ -14,7 +13,7 @@ export default function GetUsername({
 }) {
   const [open, setOpen] = useState(isOpen);
   const nameInput = useRef(null);
-  const { roomInfo, setRoomInfo } = usePoker();
+  const { roomInfo, setRoomInfo, clientUUID } = usePoker();
   const { connectToTheRoom } = useWebSocket();
 
   type GetUsernameInput = {
@@ -33,14 +32,13 @@ export default function GetUsername({
       userName: formData.userName,
       roomId: roomId,
     });
-    connectToTheRoom(roomId, formData.userName);
+    connectToTheRoom(roomId, formData.userName, clientUUID);
     setOpen(false);
   };
 
   useEffect(() => {
     setFocus('userName');
   }, [setFocus]);
-
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog
@@ -75,53 +73,37 @@ export default function GetUsername({
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                  <div className="sm:flex justify-start items-start sm:items-center">
-                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 sm:mx-0 sm:h-10 sm:w-10">
-                      <UserPlusIcon
-                        className="h-6 w-6 "
-                        aria-hidden="true"
-                        color="white"
+                  <Dialog.Title
+                    as="h3"
+                    className="text-base text-center font-semibold leading-6 text-gray-900"
+                  >
+                    You are joining room "{roomInfo.roomName}"
+                  </Dialog.Title>
+                  <form
+                    onSubmit={handleSubmit(handleJoinSession)}
+                    className="my-8 flex gap-4 justify-center"
+                  >
+                    <div className="bg-white rounded-md flex-grow">
+                      <label htmlFor="email-address" className="sr-only">
+                        What is your name?
+                      </label>
+                      <input
+                        {...register('userName', {
+                          required: 'Please enter your name',
+                        })}
+                        // ref={nameInput}
+                        className="w-full flex-auto bg-white/5 px-3.5 py-2 shadow-sm ring-1 ring-inset ring-white/10 focus:ring-1 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                        placeholder="What is your name?"
                       />
+                      {errors.userName && <span>This field is required</span>}
                     </div>
-                    <div className="mt-3 sm:ml-6 sm:mt-0 sm:text-left">
-                      <Dialog.Title
-                        as="h3"
-                        className="text-base text-center font-semibold leading-6 text-gray-900"
-                      >
-                        You are joining room {roomInfo.roomName}
-                      </Dialog.Title>
-                      <form
-                        onSubmit={handleSubmit(handleJoinSession)}
-                        className="my-8 flex max-w-md gap-x-4"
-                      >
-                        <div className="bg-white rounded-md ">
-                          <label htmlFor="email-address" className="sr-only">
-                            What is your name?
-                          </label>
-                          <input
-                            {...register('userName', {
-                              required: 'Please enter your name',
-                              pattern: /^[A-Za-z]+$/i,
-                            })}
-                            // ref={nameInput}
-                            className="w-full flex-auto bg-white/5 px-3.5 py-2 shadow-sm ring-1 ring-inset ring-white/10 focus:ring-1 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
-                            placeholder="What is your name?"
-                          />
-                          {errors.userName && (
-                            <span>This field is required</span>
-                          )}
-
-                          {JSON.stringify(errors)}
-                        </div>
-                        <button
-                          type="submit"
-                          className="flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold  shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-                        >
-                          Join Agile Poker
-                        </button>
-                      </form>
-                    </div>
-                  </div>
+                    <button
+                      type="submit"
+                      className="flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 flex-grow-0"
+                    >
+                      Join Agile Poker
+                    </button>
+                  </form>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

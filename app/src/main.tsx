@@ -8,6 +8,11 @@ import StartPage from './Pages/StartPage';
 import ErrorPage from './Pages/ErrorPage';
 import AgilePokerPage, { loader as roomIdLoader } from './Pages/AgilePoker';
 import Layout from './components/Layout';
+import { v4 as uuidv4 } from 'uuid';
+
+if (localStorage.getItem('clientUUID') === null) {
+  localStorage.setItem('clientUUID', uuidv4());
+}
 
 const router = createBrowserRouter([
   {

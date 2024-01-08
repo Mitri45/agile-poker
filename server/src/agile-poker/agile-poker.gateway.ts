@@ -9,15 +9,19 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AgilePokerService } from './agile-poker.service';
-import { RoomInfo } from '../../../types';
-type ExtendedSocket = Socket & { host: string };
+import { RoomInfo, SessionType } from '../../../types';
+type ExtendedSocket = Socket & { host: boolean; roomId: string; UUID: string };
 
 @WebSocketGateway()
-export class AgilePokerGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
   static countdownInterval: NodeJS.Timeout;
-
+  _serializedSession(session: SessionType) {
+    return {
+      participants: [...session.participants.entries()],
+      votes: [...session.votes.entries()],
+      roomName: session.roomName,
+    };
+  }
   @WebSocketServer() server: Server;
   constructor(private agilePokerService: AgilePokerService) {}
 
@@ -25,58 +29,65 @@ export class AgilePokerGateway
     console.log(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: ExtendedSocket) {
-    console.log(`Client disconnected: ${client.id}`);
-    const roomId = Object.keys(client.rooms)[1];
-    const session = this.agilePokerService.getSession(roomId);
+  async handleDisconnect(client: ExtendedSocket) {
+    console.log('Client disconnected:', client.roomId);
+    const session = this.agilePokerService.getSession(client.roomId);
     if (session) {
       const { participants } = session;
-      const participant = participants.find((p) => p === client.id);
+      const participant = participants.get(client.UUID);
       if (participant) {
-        this.agilePokerService.updateParticipants(roomId, participant);
-        const session = this.agilePokerService.getSession(roomId);
-        console.log('userLeft', session);
-        this.server.to(roomId).emit('userLeft', session);
+        this.agilePokerService.endUserSession(client.roomId, client.UUID);
+        this.server.to(client.roomId).emit('agilePokerUpdate', this._serializedSession(session));
       }
     }
-    if (client.host === client.id) {
+    if (client.host) {
       if (AgilePokerGateway.countdownInterval) {
         clearInterval(AgilePokerGateway.countdownInterval);
         AgilePokerGateway.countdownInterval = null;
       }
+      AgilePokerService.sessions.delete(client.roomId);
+      this.server.disconnectSockets();
     }
   }
 
   @SubscribeMessage('createRoom')
   handleCreateRoom(
     @MessageBody()
-    { roomId, roomInfo }: { roomId: string; roomInfo: RoomInfo },
-    @ConnectedSocket() client: ExtendedSocket & { host: string },
+    { roomId, roomInfo, clientUUID }: { roomId: string; roomInfo: RoomInfo; clientUUID: string },
+    @ConnectedSocket()
+    client: ExtendedSocket,
   ): void {
     const { roomName, userName } = roomInfo;
-    const votes: Record<string, number> = {};
-    votes[userName] = -1; // Initialize votes to -1 (not voted)
+    const votes = new Map();
+    votes.set(clientUUID, -1);
+    const participants = new Map();
+    participants.set(clientUUID, userName);
+    // Initialize votes to -1 (not voted)
     AgilePokerService.sessions.set(roomId, {
-      participants: [userName],
+      participants,
       votes,
       roomName,
     });
-    client.host = client.id;
+    client.host = true;
+    client.roomId = roomId;
+    client.UUID = clientUUID;
     const session = AgilePokerService.sessions.get(roomId);
     client.join(roomId);
-    this.server.to(roomId).emit('roomCreated', session);
+    this.server.to(roomId).emit('roomCreated', this._serializedSession(session));
   }
 
   @SubscribeMessage('connectToTheRoom')
   handleConnectToTheRoom(
     @MessageBody()
-    data: { roomId: string; participant: string },
+    { roomId, userName, clientUUID }: { roomId: string; userName: string; clientUUID: string },
     @ConnectedSocket() client: ExtendedSocket,
   ): void {
-    client.join(data.roomId);
-    this.agilePokerService.updateParticipants(data.roomId, data.participant);
-    const session = this.agilePokerService.getSession(data.roomId);
-    this.server.to(data.roomId).emit('userJoined', session);
+    client.roomId = roomId;
+    client.UUID = clientUUID;
+    client.join(roomId);
+    this.agilePokerService.updateParticipants(roomId, userName, clientUUID);
+    const session = this.agilePokerService.getSession(roomId);
+    this.server.to(roomId).emit('userJoined', this._serializedSession(session));
   }
 
   @SubscribeMessage('checkRoom')
@@ -103,22 +114,17 @@ export class AgilePokerGateway
   ) {
     this.agilePokerService.vote(data.roomId, data.participant, data.vote);
     const session = this.agilePokerService.getSession(data.roomId);
-    this.server.to(data.roomId).emit('agilePokerUpdate', session);
+    this.server.to(data.roomId).emit('agilePokerUpdate', this._serializedSession(session));
   }
 
   @SubscribeMessage('startCountdown')
   handleStartCountdown(
     @MessageBody()
-    {
-      roomId,
-      countdownDuration,
-    }: {
-      roomId: string;
-      countdownDuration: number;
-    },
+    { roomId, countdownDuration }: { roomId: string; countdownDuration: number },
   ): void {
     const session = this.agilePokerService.getSession(roomId);
     if (session) {
+      session.votes.clear();
       if (!AgilePokerGateway.countdownInterval) {
         this.server.to(roomId).emit('startCountdown');
         AgilePokerGateway.countdownInterval = setInterval(() => {

@@ -6,26 +6,33 @@ import Card from '../components/Card';
 import Timer from '../components/Timer';
 import DynamicParticipantList from '../components/Participants';
 import GetUsername from '../components/GetUsername';
+import SpeechBubble from '../components/SpeechBubble';
+import CopyLink from '../components/CopyLink';
+import Toast from '../components/Toast';
 
 export async function loader({ params }: any) {
   return params.roomId;
 }
-const pokerNumbers = [1, 2, 3, 5, 8, 13, 21, 34];
+const pokerNumbers = [1, 2, 3, 5, 8, 13, 21];
 
 export default function AgilePokerPage() {
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [userJoining, setUserJoining] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCopyLinkOpen, setIsCopyLinkOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const { state } = useLocation();
   const { socket } = useWebSocket();
-  const { roomInfo, pokerSession } = usePoker();
+  const { roomInfo, pokerSession, setRoomInfo } = usePoker();
   const navigate = useNavigate();
   const roomId = useLoaderData() as string;
 
   useEffect(() => {
     if (state) {
       setIsLoading(state?.isLoading);
+      if (state.isHost) {
+        setIsCopyLinkOpen(true);
+      }
     }
   }, []);
 
@@ -35,55 +42,57 @@ export default function AgilePokerPage() {
       // Anon user used room URL
       if (!roomInfo?.userName) {
         // check that room is not empty on the backend
-        socket.emit('checkRoom', { roomId }, (response: any) => {
-          if (response && response.status === 'ok') {
-            setIsLoading(false);
-            setUserJoining(true);
-          }
-          if (response && response.status === 'error') {
-            // No such room exist - starting new session
-            navigate(`/`, {
-              state: {
-                message: "Room you were trying to access doesn't exist",
-              },
-            });
-          }
-        });
+        socket.emit(
+          'checkRoom',
+          { roomId },
+          (response: { status: string; roomName: string; error?: string }) => {
+            if (response && response.status === 'ok') {
+              setIsLoading(false);
+              setUserJoining(true);
+              setRoomInfo({
+                ...roomInfo,
+                roomId: roomId,
+                roomName: response.roomName,
+              });
+            }
+            if (response && response.status === 'error') {
+              // No such room exist - starting new session
+              navigate(`/`, {
+                state: {
+                  message: "Room you were trying to access doesn't exist",
+                },
+              });
+            }
+          },
+        );
       }
     }
   }, [socket, roomId]);
-  return (
-    <div className="flex-grow flex flex-col items-center justify-around">
-      {isLoading ? (
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500 border-solid"></div>
-      ) : (
-        <div>
-          <GetUsername isOpen={userJoining} roomId={roomId} />
-          <div>
-            <h2 className="text-3xl text-center font-semibold mb-10 p-5">
-              {roomInfo.roomName}
-            </h2>
-            <div className="flex items-start justify-between px-10">
-              <DynamicParticipantList session={pokerSession} />
-              <Timer />
-            </div>
+  return isLoading ? (
+    <main className="flex-grow flex flex-col items-center justify-around ">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500 border-solid"></div>
+    </main>
+  ) : (
+    <main className="flex-grow flex flex-col items-center justify-around">
+      <CopyLink isOpen={isCopyLinkOpen} setShowToast={setShowToast} />
+      <GetUsername isOpen={userJoining} roomId={roomId} />
+      <div className="flex justify-around w-full flex-wrap">
+        <DynamicParticipantList session={pokerSession} />
+        <SpeechBubble text={roomInfo.roomName} />
+      </div>
+      <div className="flex w-full justify-evenly flex-wrap">
+        {pokerNumbers.map((rank) => (
+          <div key={rank} className="flex justify-between m-2">
+            <Card rank={rank} />
           </div>
-          <div className="flex flex-col items-center">
-            <div className="flex w-full justify-evenly">
-              {pokerNumbers.map((rank) => (
-                <div key={rank} className="flex justify-between">
-                  <Card
-                    rank={rank}
-                    isSelected={rank === selectedCard}
-                    setSelectedCard={setSelectedCard}
-                    selectedCard={selectedCard}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        ))}
+      </div>
+      <Timer />
+      <Toast
+        message="URL is copied to clipboard"
+        showToast={showToast}
+        setShowToast={setShowToast}
+      />
+    </main>
   );
 }

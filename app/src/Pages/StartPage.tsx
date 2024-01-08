@@ -14,18 +14,17 @@ type StartPageInputs = {
 
 export default function StartPage() {
   const { createRoom } = useWebSocket();
-
   const { setRoomInfo } = usePoker();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<StartPageInputs>();
+  let { state } = useLocation();
+  const navigate = useNavigate();
 
   const [showToast, setShowToast] = useState(false);
   const [message, setMessage] = useState('');
-  let { state } = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (state && state.message) {
@@ -55,7 +54,7 @@ export default function StartPage() {
       setRoomInfo(roomInfo);
       createRoom(data.roomId, roomInfo);
       navigate(`/room/${data.roomId}`, {
-        state: { isLoading: false },
+        state: { isLoading: false, isHost: true },
       });
     } catch (error) {
       console.log('Error:', error);
