@@ -9,6 +9,7 @@ import ErrorPage from './Pages/ErrorPage';
 import AgilePokerPage, { loader as roomIdLoader } from './Pages/AgilePoker';
 import Layout from './components/Layout';
 import { v4 as uuidv4 } from 'uuid';
+import Version from './components/Version';
 
 if (localStorage.getItem('clientUUID') === null) {
   localStorage.setItem('clientUUID', uuidv4());
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
     <PokerProvider>
       <WebSocketProvider>
         <RouterProvider router={router} />
+        <Version />
       </WebSocketProvider>
     </PokerProvider>
   </React.StrictMode>,
