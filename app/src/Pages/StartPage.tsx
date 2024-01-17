@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CountdownState } from '../../../types';
 import { useWebSocket } from '../context/WebSocketContext';
+import logo from '../../public/agile-poker-logo.jpeg';
 
 type StartPageInputs = {
   roomName: string;
@@ -63,9 +64,11 @@ export default function StartPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="max-w-xl lg:max-w-lg bg-gray-100 rounded-md shadow-lg  p-8">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Agile Poker Start Page
-        </h2>
+        <img
+          src={logo}
+          alt="Agile Poker Logo"
+          className="rounded-md mb-3 max-w-sm m-auto"
+        />
         <form
           onSubmit={handleSubmit(handlePrepareSession)}
           className="mt-8 flex flex-col max-w-md gap-x-4"

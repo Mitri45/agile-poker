@@ -3,6 +3,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { useWebSocket } from '../context/WebSocketContext';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import logo from '../../public/agile-poker-logo.jpeg';
 
 export default function GetUsername({
   isOpen,
@@ -73,9 +74,14 @@ export default function GetUsername({
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                 <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                  <img
+                    src={logo}
+                    alt="Agile Poker Logo"
+                    className="rounded-md mb-3 max-w-sm m-auto"
+                  />
                   <Dialog.Title
                     as="h3"
-                    className="text-base text-center font-semibold leading-6 text-gray-900"
+                    className="text-lg text-center font-semibold leading-6 text-gray-900"
                   >
                     You are joining room "{pokerSession.roomName}"
                   </Dialog.Title>
