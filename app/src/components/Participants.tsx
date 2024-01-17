@@ -2,7 +2,7 @@ import { CountdownState, SessionType } from '../../../types';
 import { usePoker } from '../context/PokerContext';
 
 const DynamicParticipantList = ({ session }: { session: SessionType }) => {
-  const { countdownState, roomInfo } = usePoker();
+  const { countdownState } = usePoker();
   const votingProcessToRender = (clientUUID: string) => {
     switch (countdownState) {
       case CountdownState.Stopped:
