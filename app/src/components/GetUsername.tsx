@@ -83,7 +83,9 @@ export default function GetUsername({
                     as="h3"
                     className="text-lg text-center font-semibold leading-6 text-gray-900"
                   >
-                    You are joining room "{pokerSession.roomName}"
+                    Welcome to Agile Poker. <br />
+                    Please enter your name to discuss "{pokerSession.roomName}"
+                    topic.
                   </Dialog.Title>
                   <form
                     onSubmit={handleSubmit(handleJoinSession)}
@@ -96,12 +98,19 @@ export default function GetUsername({
                       <input
                         {...register('userName', {
                           required: 'Please enter your name',
+                          maxLength: {
+                            value: 20,
+                            message:
+                              'Please enter a name with fewer than 20 characters',
+                          },
                         })}
                         // ref={nameInput}
                         className="w-full flex-auto bg-white/5 px-3.5 py-2 shadow-sm ring-1 ring-inset ring-white/10 focus:ring-1 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
                         placeholder="What is your name?"
                       />
-                      {errors.userName && <span>This field is required</span>}
+                      {errors.userName && (
+                        <span>{errors.userName.message}</span>
+                      )}
                     </div>
                     <button
                       type="submit"

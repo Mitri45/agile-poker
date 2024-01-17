@@ -84,7 +84,7 @@ export default function AgilePokerPage() {
         <DynamicParticipantList session={pokerSession} />
         <TopicNameBubble roomId={roomId} />
       </div>
-      <div className="flex w-full justify-evenly flex-wrap">
+      <div className="flex w-full justify-evenly flex-wrap max-w-[1200px]">
         {pokerNumbers.map((rank) => (
           <div key={rank} className="flex justify-between m-2">
             <Card rank={rank} />

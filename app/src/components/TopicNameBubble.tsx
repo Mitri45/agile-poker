@@ -42,7 +42,7 @@ export default function TopicNameBubble({ roomId }: { roomId: string }) {
       <div className="my-4 relative min-w-[300px] max-w-[400px] max-h-[500px] p-4 bg-blue-200 text-black rounded-lg">
         <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-200 rotate-45" />
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-bold">Voting for...</h2>
+          <h2 className="text-lg font-bold">Room's Topic:</h2>
           {roomInfo.isHost && (
             <div className="group">
               <div
@@ -57,7 +57,7 @@ export default function TopicNameBubble({ roomId }: { roomId: string }) {
             </div>
           )}
         </div>
-        <p>{pokerSession.roomName}</p>
+        <p className=" text-xl break-all">{pokerSession.roomName}</p>
       </div>
 
       <Transition appear show={isOpen} as={Fragment}>
