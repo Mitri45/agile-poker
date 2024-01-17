@@ -8,12 +8,12 @@ import {
 } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { usePoker } from './PokerContext';
-import { RoomInfo, SessionType } from '../../../types';
+import { SessionType } from '../../../types';
 import { redirect } from 'react-router-dom';
 
 interface WebSocketContextProps {
   socket: Socket | null;
-  createRoom: (roomId: string, roomInfo: RoomInfo) => void;
+  createRoom: (roomId: string, roomName: string, userName: string) => void;
   endAgilePoker: (roomId: string) => void;
   vote: (roomId: string, participant: string, vote: number | null) => void;
   connectToTheRoom: (
@@ -21,6 +21,7 @@ interface WebSocketContextProps {
     userName: string,
     clientUUID: string,
   ) => void;
+  updateRoomTopic: (roomId: string, topic: string) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextProps>({
@@ -29,6 +30,7 @@ const WebSocketContext = createContext<WebSocketContextProps>({
   endAgilePoker: () => {},
   vote: () => {},
   connectToTheRoom: () => {},
+  updateRoomTopic: () => {},
 });
 
 export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
@@ -38,8 +40,10 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
   function deserializedSessionInfo(sessionInfo: SessionType) {
     return {
       ...sessionInfo,
+      roomName: sessionInfo.roomName,
       participants: new Map(sessionInfo.participants),
       votes: new Map(sessionInfo.votes),
+      host: sessionInfo.host,
     };
   }
 
@@ -50,7 +54,6 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     setSocket(newSocket);
     if (newSocket) {
       newSocket.on('disconnect', () => {
-        console.log('Disconnected from WebSocket server');
         redirect('/');
       });
       newSocket.on('roomCreated', (sessionInfo: SessionType) => {
@@ -68,9 +71,9 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     };
   }, []);
 
-  const createRoom = (roomId: string, roomInfo: RoomInfo) => {
+  const createRoom = (roomId: string, userName: string, roomName: string) => {
     if (socket) {
-      socket.emit('createRoom', { roomId, roomInfo, clientUUID });
+      socket.emit('createRoom', { roomId, userName, roomName, clientUUID });
     }
   };
 
@@ -95,6 +98,11 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
       socket.emit('vote', { roomId, participant, vote });
     }
   };
+  const updateRoomTopic = (roomId: string, topic: string) => {
+    if (socket) {
+      socket.emit('updateRoomTopic', { roomId, newRoomName: topic });
+    }
+  };
 
   return (
     <WebSocketContext.Provider
@@ -104,6 +112,7 @@ export const WebSocketProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         endAgilePoker,
         vote,
         connectToTheRoom,
+        updateRoomTopic,
       }}
     >
       {children}

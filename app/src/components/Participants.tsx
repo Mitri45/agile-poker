@@ -36,7 +36,7 @@ const DynamicParticipantList = ({ session }: { session: SessionType }) => {
               <td className="py-2">{index + 1}</td>
               <td className="py-2">
                 {value}
-                {roomInfo.isHost && (
+                {key === session.host && (
                   <span className="ml-1 text-xs">(host)</span>
                 )}
               </td>

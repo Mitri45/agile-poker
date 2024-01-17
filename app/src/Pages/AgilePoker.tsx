@@ -6,7 +6,7 @@ import Card from '../components/Card';
 import Timer from '../components/Timer';
 import DynamicParticipantList from '../components/Participants';
 import GetUsername from '../components/GetUsername';
-import SpeechBubble from '../components/SpeechBubble';
+import TopicNameBubble from '../components/TopicNameBubble';
 import CopyLink from '../components/CopyLink';
 import Toast from '../components/Toast';
 
@@ -23,7 +23,7 @@ export default function AgilePokerPage() {
 
   const { state } = useLocation();
   const { socket } = useWebSocket();
-  const { roomInfo, pokerSession, setRoomInfo } = usePoker();
+  const { roomInfo, pokerSession, setRoomInfo, setPokerSession } = usePoker();
   const navigate = useNavigate();
   const roomId = useLoaderData() as string;
 
@@ -47,11 +47,15 @@ export default function AgilePokerPage() {
           { roomId },
           (response: { status: string; roomName: string; error?: string }) => {
             if (response && response.status === 'ok') {
+              console.log('Room is not empty, ps', response);
               setIsLoading(false);
               setUserJoining(true);
               setRoomInfo({
                 ...roomInfo,
                 roomId: roomId,
+              });
+              setPokerSession({
+                ...pokerSession,
                 roomName: response.roomName,
               });
             }
@@ -78,7 +82,7 @@ export default function AgilePokerPage() {
       <GetUsername isOpen={userJoining} roomId={roomId} />
       <div className="flex justify-around w-full flex-wrap">
         <DynamicParticipantList session={pokerSession} />
-        <SpeechBubble text={roomInfo.roomName} />
+        <TopicNameBubble roomId={roomId} />
       </div>
       <div className="flex w-full justify-evenly flex-wrap">
         {pokerNumbers.map((rank) => (

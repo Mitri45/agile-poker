@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AgilePokerService } from './agile-poker.service';
-import { RoomInfo, SessionType } from '../../../types';
+import { SessionType } from '../../../types';
 type ExtendedSocket = Socket & { host: boolean; roomId: string; UUID: string };
 
 @WebSocketGateway()
@@ -20,6 +20,7 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
       participants: [...session.participants.entries()],
       votes: [...session.votes.entries()],
       roomName: session.roomName,
+      host: session.host,
     };
   }
   @WebSocketServer() server: Server;
@@ -53,11 +54,15 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
   @SubscribeMessage('createRoom')
   handleCreateRoom(
     @MessageBody()
-    { roomId, roomInfo, clientUUID }: { roomId: string; roomInfo: RoomInfo; clientUUID: string },
+    {
+      roomId,
+      userName,
+      roomName,
+      clientUUID,
+    }: { roomId: string; userName: string; roomName: string; clientUUID: string },
     @ConnectedSocket()
     client: ExtendedSocket,
   ): void {
-    const { roomName, userName } = roomInfo;
     const votes = new Map();
     votes.set(clientUUID, -1);
     const participants = new Map();
@@ -67,6 +72,7 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
       participants,
       votes,
       roomName,
+      host: clientUUID,
     });
     client.host = true;
     client.roomId = roomId;
@@ -117,6 +123,18 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
     this.server.to(data.roomId).emit('agilePokerUpdate', this._serializedSession(session));
   }
 
+  @SubscribeMessage('updateRoomTopic')
+  handleUpdateRoomTopic(
+    @MessageBody()
+    { roomId, newRoomName }: { roomId: string; newRoomName: string },
+  ): void {
+    const session = this.agilePokerService.getSession(roomId);
+    if (session) {
+      session.roomName = newRoomName;
+      this.server.to(roomId).emit('agilePokerUpdate', this._serializedSession(session));
+    }
+  }
+
   @SubscribeMessage('startCountdown')
   handleStartCountdown(
     @MessageBody()
@@ -125,6 +143,7 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
     const session = this.agilePokerService.getSession(roomId);
     if (session) {
       session.votes.clear();
+      // this.server.to(roomId).emit('agilePokerUpdate', this._serializedSession(session));
       if (!AgilePokerGateway.countdownInterval) {
         this.server.to(roomId).emit('startCountdown');
         AgilePokerGateway.countdownInterval = setInterval(() => {

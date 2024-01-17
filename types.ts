@@ -5,10 +5,9 @@ export enum CountdownState {
 }
 
 export type RoomInfo = {
-    roomName: string;
     userName: string;
     roomId: string;
-    isHost?: boolean;
+    isHost: boolean;
     countdownState: CountdownState;
   };
 
@@ -16,6 +15,7 @@ export type RoomInfo = {
     participants: Map<string, string>;
     votes: Map<string, number>;
     roomName: string;
+    host?: string;
   };
   
   

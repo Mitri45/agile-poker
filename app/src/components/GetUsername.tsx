@@ -13,7 +13,7 @@ export default function GetUsername({
 }) {
   const [open, setOpen] = useState(isOpen);
   const nameInput = useRef(null);
-  const { roomInfo, setRoomInfo, clientUUID } = usePoker();
+  const { roomInfo, pokerSession, setRoomInfo, clientUUID } = usePoker();
   const { connectToTheRoom } = useWebSocket();
 
   type GetUsernameInput = {
@@ -77,7 +77,7 @@ export default function GetUsername({
                     as="h3"
                     className="text-base text-center font-semibold leading-6 text-gray-900"
                   >
-                    You are joining room "{roomInfo.roomName}"
+                    You are joining room "{pokerSession.roomName}"
                   </Dialog.Title>
                   <form
                     onSubmit={handleSubmit(handleJoinSession)}

@@ -45,14 +45,13 @@ export default function StartPage() {
         },
       );
       const roomInfo = {
-        roomName: formData.roomName,
         userName: formData.userName,
         roomId: data.roomId,
         countdownState: CountdownState.Stopped,
         isHost: true,
       };
       setRoomInfo(roomInfo);
-      createRoom(data.roomId, roomInfo);
+      createRoom(data.roomId, formData.userName, formData.roomName);
       navigate(`/room/${data.roomId}`, {
         state: { isLoading: false, isHost: true },
       });

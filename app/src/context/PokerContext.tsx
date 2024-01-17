@@ -8,9 +8,9 @@ import {
 
 const PokerContext = createContext<PokerContextProps>({
   roomInfo: {
-    roomName: '',
     userName: '',
     roomId: '',
+    isHost: false,
     countdownState: CountdownState.Stopped,
   },
   clientUUID: '',
@@ -27,7 +27,6 @@ export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
   children,
 }) => {
   const [roomInfo, setRoomInfo] = useState<RoomInfo>({
-    roomName: '',
     userName: '',
     roomId: '',
     isHost: false,
