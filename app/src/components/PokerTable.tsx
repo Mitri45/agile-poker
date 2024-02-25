@@ -1,5 +1,4 @@
 import { usePoker } from "../context/PokerContext";
-import { useWebSocket } from "../context/WebSocketContext";
 
 const PokerTable = () => {
 	const [{ pokerSession }] = usePoker();
