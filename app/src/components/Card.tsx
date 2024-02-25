@@ -59,7 +59,7 @@ export const VoteResultCard = ({ voteToRender, className, userName, cardBack }: 
 	const randomCardSuite = useMemo(() => cardSuits[Math.floor(Math.random() * cardSuits.length)], []);
 
 	return (
-		<div className={`text-center bg-transparent ${className} flex flex-col items-center`}>
+		<div className={`text-center bg-transparent ${className} flex flex-col items-center w-[100px]`}>
 			<Tilt>
 				<div className={"w-[70px] h-[100px] bg-transparent"}>
 					<div

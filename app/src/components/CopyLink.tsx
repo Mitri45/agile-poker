@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
 
@@ -11,7 +11,6 @@ export default function CopyLink({
 }) {
 	const [open, setOpen] = useState(isOpen);
 	const [copied, setCopied] = useState(false);
-	const nameInput = useRef(null);
 	const location = window.location.href;
 
 	const copyToClipboard = async () => {
@@ -21,13 +20,13 @@ export default function CopyLink({
 			setOpen(false);
 			showToastMessage("URL is copied to clipboard");
 		} catch (error) {
-			console.error(error);
+			showToastMessage("Failed to copy URL to clipboard");
 		}
 	};
 
 	return (
 		<Transition.Root show={open} as={Fragment}>
-			<Dialog as="div" className="relative z-10" initialFocus={nameInput} onClose={setOpen}>
+			<Dialog as="div" className="relative z-10" onClose={setOpen}>
 				<Transition.Child
 					as={Fragment}
 					enter="ease-out duration-300"

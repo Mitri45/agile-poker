@@ -62,7 +62,10 @@ export default function StartPage() {
 							Room name
 						</label>
 						<input
-							{...register("roomName", { required: true })}
+							{...register("roomName", {
+								required: "Please enter a topic for discussion",
+								maxLength: { value: 50, message: "Topic name is too long, max is 50 characters" },
+							})}
 							id="roomName"
 							name="roomName"
 							type="text"
@@ -71,14 +74,17 @@ export default function StartPage() {
 							className=" border-0 w-full bg-white/5 px-3.5 py-2  shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
 							placeholder="What topic are we discussing? "
 						/>
-						{errors.roomName && <span>This field is required</span>}
+						{errors.roomName && <span>{errors.roomName.message}</span>}
 					</div>
 					<div className="mb-5 bg-white rounded-md ">
 						<label htmlFor="email-address" className="sr-only">
 							Your Name
 						</label>
 						<input
-							{...register("userName", { required: true })}
+							{...register("userName", {
+								required: "Please enter your name",
+								maxLength: { value: 20, message: "Please enter a name with fewer than 20 characters" },
+							})}
 							id="userName"
 							name="userName"
 							type="text"
@@ -87,7 +93,7 @@ export default function StartPage() {
 							className="w-full flex-auto border-0 bg-white/5 px-3.5 py-2  shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
 							placeholder="Enter your name"
 						/>
-						{errors.userName && <span>This field is required</span>}
+						{errors.userName && <span>{errors.userName.message}</span>}
 					</div>
 					<button
 						type="submit"

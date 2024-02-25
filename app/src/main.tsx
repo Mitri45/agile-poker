@@ -7,6 +7,16 @@ import ErrorPage from "./routes/ErrorPage";
 import AgilePokerPage from "./routes/AgilePoker";
 import Root from "./routes/Root";
 
+console.log(`
+Hello there! 👋
+  _______
+ |A      |
+ |   ♠   |
+ |       |
+ |   ♠   |
+ |_______|
+
+`);
 const router = createBrowserRouter([
 	{
 		element: <Root />,
