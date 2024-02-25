@@ -1,32 +1,40 @@
 export enum CountdownState {
-  "Stopped" = "stopped",
-  "Started" = "started",
-  "Finished" = "finished",
+	Stopped = "stopped",
+	Started = "started",
+	Finished = "finished",
 }
 
 export type RoomInfo = {
-    userName: string;
-    roomId: string;
-    isHost: boolean;
-    countdownState: CountdownState;
-  };
+	userName: string;
+	roomId: string;
+	isHost: boolean;
+};
 
-  export type SessionType = {
-    participants: Map<string, string>;
-    votes: Map<string, number>;
-    roomName: string;
-    host?: string;
-  };
-  
-  
-  export interface PokerContextProps {
-    clientUUID: string;
-    roomInfo: RoomInfo;
-    setRoomInfo: (roomInfo: RoomInfo) => void;
-    pokerSession: SessionType;
-    setPokerSession: (pokerSession: SessionType) => void;
-    countdownState: CountdownState;
-    setCountdownState: (state: CountdownState) => void;
-    selectedCard: number | null;
-    setSelectedCard: (card: number | null) => void;
-  }
+export type ParticipantObject = {
+	userName: string;
+	vote: number;
+	cardBackNumber: string;
+};
+
+export type SessionType = {
+	participants: Map<string, ParticipantObject>;
+	roomName: string;
+	host?: string;
+};
+
+interface PokerContextGetters {
+	roomInfo: RoomInfo;
+	pokerSession: SessionType;
+	countdownState: CountdownState;
+	selectedCard: number | null;
+	clientUUID: string | null;
+}
+interface PokerContextHandlers {
+	setRoomInfoAttribute: (roomInfo: Partial<RoomInfo>) => void;
+	setRoomName: (roomName: string) => void;
+	setPokerSession: (pokerSession: SessionType) => void;
+	setCountdownState: (countdownState: CountdownState) => void;
+	setSelectedCard: (selectedCard: number | null) => void;
+}
+
+export type PokerContextProps = [getters: PokerContextGetters, handlers: PokerContextHandlers];

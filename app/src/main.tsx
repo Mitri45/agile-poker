@@ -1,45 +1,35 @@
-import React from 'react';
-import './index.css';
-import { WebSocketProvider } from './context/WebSocketContext';
-import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { PokerProvider } from './context/PokerContext';
-import StartPage from './Pages/StartPage';
-import ErrorPage from './Pages/ErrorPage';
-import AgilePokerPage, { loader as roomIdLoader } from './Pages/AgilePoker';
-import Layout from './components/Layout';
-import { v4 as uuidv4 } from 'uuid';
-import Version from './components/Version';
-
-if (localStorage.getItem('clientUUID') === null) {
-  localStorage.setItem('clientUUID', uuidv4());
-}
+import React from "react";
+import "./index.css";
+import { createRoot } from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import StartPage from "./routes/StartPage";
+import ErrorPage from "./routes/ErrorPage";
+import AgilePokerPage from "./routes/AgilePoker";
+import Root from "./routes/Root";
 
 const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <StartPage />,
-    errorElement: <ErrorPage />,
-  },
-  {
-    path: '/room/:roomId',
-    element: (
-      <Layout>
-        <AgilePokerPage />
-      </Layout>
-    ),
-    errorElement: <ErrorPage />,
-    loader: roomIdLoader,
-  },
+	{
+		element: <Root />,
+		errorElement: <ErrorPage />,
+		children: [
+			{
+				path: "/",
+				element: <StartPage />,
+			},
+			{
+				path: "/room/:roomId",
+				element: <AgilePokerPage />,
+				loader: ({ params }) => {
+					return params;
+				},
+			},
+		],
+	},
 ]);
-
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <PokerProvider>
-      <WebSocketProvider>
-        <RouterProvider router={router} />
-        <Version />
-      </WebSocketProvider>
-    </PokerProvider>
-  </React.StrictMode>,
-);
+const root = document.getElementById("root");
+if (root)
+	createRoot(root).render(
+		<React.StrictMode>
+			<RouterProvider router={router} />
+		</React.StrictMode>,
+	);
