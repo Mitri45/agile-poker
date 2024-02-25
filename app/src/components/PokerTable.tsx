@@ -1,11 +1,10 @@
-import { useEffect, Fragment, useState, useRef } from "react";
+import { useEffect, Fragment, useState } from "react";
 import { usePoker } from "../context/PokerContext";
 import { useWebSocket } from "../context/WebSocketContext";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { Dialog, Transition } from "@headlessui/react";
 
 const PokerTable = () => {
-	const inputRef = useRef<HTMLInputElement>(null);
 	const [isOpen, setIsOpen] = useState(false);
 	const [{ pokerSession, roomInfo }] = usePoker();
 	const { updateRoomTopic } = useWebSocket();

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, FC, PropsWithChildren } from "react";
+import { createContext, useContext, useEffect, useState, PropsWithChildren } from "react";
 import { io, Socket } from "socket.io-client";
 import { usePoker } from "./PokerContext";
 import { SessionType } from "../../../types";
