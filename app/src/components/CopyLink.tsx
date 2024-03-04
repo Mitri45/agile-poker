@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ClipboardDocumentListIcon } from "@heroicons/react/24/solid";
 
@@ -11,6 +11,7 @@ export default function CopyLink({
 }) {
 	const [open, setOpen] = useState(isOpen);
 	const [copied, setCopied] = useState(false);
+	const copyButtonRef = useRef(null);
 	const location = window.location.href;
 
 	const copyToClipboard = async () => {
@@ -26,7 +27,7 @@ export default function CopyLink({
 
 	return (
 		<Transition.Root show={open} as={Fragment}>
-			<Dialog as="div" className="relative z-10" onClose={setOpen}>
+			<Dialog as="div" className="relative z-10" onClose={setOpen} initialFocus={copyButtonRef}>
 				<Transition.Child
 					as={Fragment}
 					enter="ease-out duration-300"
@@ -62,9 +63,15 @@ export default function CopyLink({
 									>
 										{location}
 									</p>
-									<div className="bg-gray-300 mx-3 cursor-pointer hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center">
-										<ClipboardDocumentListIcon className="h-8 w-8 text-gray-900 " onClick={copyToClipboard} />
-									</div>
+									<button
+										title="copy"
+										type="button"
+										onClick={copyToClipboard}
+										ref={copyButtonRef}
+										className="bg-gray-300 mx-3 cursor-pointer hover:bg-gray-400 focus:bg-gray-400 focus:border-2  hover:border-2  hover:shadow-sm  hover:border-black-500 focus:border-black-500 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center"
+									>
+										<ClipboardDocumentListIcon ref={copyButtonRef} className="h-8 w-8 text-gray-900 " />
+									</button>
 								</div>
 							</Dialog.Panel>
 						</Transition.Child>

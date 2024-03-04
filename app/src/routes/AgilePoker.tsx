@@ -73,6 +73,7 @@ export default function AgilePokerPage() {
 					<DynamicParticipantList session={pokerSession} />
 					<PokerTable />
 				</div>
+
 				<div className="flex px-4 min-h-[400px] justify-around lg:justify-between items-center w-full max-w-[1200px]">
 					<Timer showToastMessage={showToastMessage} />
 					<div className="flex w-1/2 lg:w-full justify-evenly flex-wrap max-w-[1000px]">

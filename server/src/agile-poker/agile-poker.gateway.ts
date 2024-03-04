@@ -26,8 +26,11 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 	constructor(private agilePokerService: AgilePokerService) {}
 
 	handleConnection(socket: ExtendedSocket) {
-		console.log(`Client connected: ${socket.id}`);
-		console.log("client connected rooms", socket.rooms);
+		if (socket.recovered) {
+			//TODO: recover session
+		} else {
+			// TODO: session
+		}
 	}
 
 	handleDisconnect(socket: ExtendedSocket) {
@@ -45,8 +48,8 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 				clearInterval(AgilePokerGateway.countdownInterval);
 				AgilePokerGateway.countdownInterval = null;
 			}
-			AgilePokerService.sessions.delete(socket.data.roomId);
 			this.io.in(socket.data.roomId).emit("roomDeleted");
+			AgilePokerService.sessions.delete(socket.data.roomId);
 			this.io.in(socket.data.roomId).disconnectSockets();
 		}
 	}

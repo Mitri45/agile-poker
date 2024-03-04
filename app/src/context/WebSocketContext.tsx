@@ -42,6 +42,15 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 		});
 		setSocket(newSocket);
 		if (newSocket) {
+			newSocket.on("connect", () => {
+				if (newSocket.recovered) {
+					// any event missed during the disconnection period will be received now
+					//TODO: recover session
+				} else {
+					// new or unrecoverable session
+					// TODO: // newSocket.emit("checkRoom", { roomId }, (response: { status: string; roomName: string; error?: string }) => {
+				}
+			});
 			newSocket.on("roomCreated", (sessionInfo: SessionType) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
 			});
@@ -52,6 +61,7 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
 			});
 			newSocket.on("roomDeleted", () => {
+				console.log("roomDeleted");
 				setPokerSession({ participants: new Map(), roomName: "" });
 				navigate("/", {
 					state: {
