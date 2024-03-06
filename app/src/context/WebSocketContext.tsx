@@ -24,7 +24,7 @@ const WebSocketContext = createContext<WebSocketContextProps>({
 
 export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 	const [socket, setSocket] = useState<Socket | null>(null);
-	const [{ clientUUID }, { setPokerSession }] = usePoker();
+	const [{ clientUUID }, { setPokerSession, setRoomInfoAttribute }] = usePoker();
 	const navigate = useNavigate();
 
 	function deserializedSessionInfo(sessionInfo: SessionType) {
@@ -42,20 +42,14 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 		});
 		setSocket(newSocket);
 		if (newSocket) {
-			newSocket.on("connect", () => {
-				if (newSocket.recovered) {
-					// any event missed during the disconnection period will be received now
-					//TODO: recover session
-				} else {
-					// new or unrecoverable session
-					// TODO: // newSocket.emit("checkRoom", { roomId }, (response: { status: string; roomName: string; error?: string }) => {
-				}
-			});
 			newSocket.on("roomCreated", (sessionInfo: SessionType) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
 			});
 			newSocket.on("agilePokerUpdate", (sessionInfo: SessionType) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
+				if (sessionInfo?.hostUpdated && clientUUID === sessionInfo.host) {
+					setRoomInfoAttribute({ isHost: true });
+				}
 			});
 			newSocket.on("userJoined", (sessionInfo) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
@@ -73,7 +67,7 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 		return () => {
 			newSocket.disconnect();
 		};
-	}, [setPokerSession, navigate]);
+	}, [setPokerSession, setRoomInfoAttribute, navigate, clientUUID]);
 
 	const createRoom = (roomId: string, userName: string, roomName: string) => {
 		if (socket) {

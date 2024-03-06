@@ -15,42 +15,69 @@ type ExtendedSocket = Socket & { host: boolean; roomId: string; UUID: string };
 @WebSocketGateway()
 export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	static countdownInterval: NodeJS.Timeout;
+	private _disconnectionInterval: NodeJS.Timeout;
+
+	_handleHostDisconnect(socket: ExtendedSocket, roomId: string) {
+		console.log("_handleHostDisconnect");
+		const session = this.agilePokerService.getSession(socket.data.roomId);
+		console.log("session", session, socket.data.roomId, socket.data.UUID, socket.data.host);
+		const participants = session.participants;
+		participants.delete(session.host);
+		if (AgilePokerGateway.countdownInterval) {
+			clearInterval(AgilePokerGateway.countdownInterval);
+			AgilePokerGateway.countdownInterval = null;
+		}
+		if (participants.size > 0) {
+			const newHost = participants.keys().next().value;
+			session.host = newHost;
+			session.hostUpdated = true;
+			this.io.to(roomId).emit("agilePokerUpdate", this._serializedSession(session));
+			this.io
+				.to(roomId)
+				.emit("announcement", `Host has left the session. New host is ${participants.get(newHost).userName}`);
+		} else {
+			this.io.in(roomId).emit("roomDeleted");
+			AgilePokerService.sessions.delete(roomId);
+			this.io.in(roomId).disconnectSockets();
+		}
+		clearInterval(this._disconnectionInterval);
+		this._disconnectionInterval = null;
+	}
+
 	_serializedSession(session: SessionType) {
 		return {
 			participants: [...session.participants.entries()],
 			roomName: session.roomName,
 			host: session.host,
+			hostUpdated: session?.hostUpdated ?? false,
 		};
 	}
+
 	@WebSocketServer() io: Server;
 	constructor(private agilePokerService: AgilePokerService) {}
 
 	handleConnection(socket: ExtendedSocket) {
 		if (socket.recovered) {
-			//TODO: recover session
-		} else {
-			// TODO: session
+			const session = this.agilePokerService.getSession(socket.data.roomId);
+			if (session) {
+				const { participants } = session;
+				const participant = participants.get(socket.data.UUID);
+				if (participant) {
+					this.io.to(socket.data.roomId).emit("agilePokerUpdate", this._serializedSession(session));
+				}
+				if (socket.data.host) {
+					clearInterval(this._disconnectionInterval);
+				}
+			}
 		}
 	}
 
 	handleDisconnect(socket: ExtendedSocket) {
-		const session = this.agilePokerService.getSession(socket.data.roomId);
-		if (session) {
-			const { participants } = session;
-			const participant = participants.get(socket.data.UUID);
-			if (participant) {
-				this.agilePokerService.endUserSession(socket.data.roomId, socket.data.UUID);
-				this.io.to(socket.data.roomId).emit("agilePokerUpdate", this._serializedSession(session));
-			}
-		}
 		if (socket.data.host) {
-			if (AgilePokerGateway.countdownInterval) {
-				clearInterval(AgilePokerGateway.countdownInterval);
-				AgilePokerGateway.countdownInterval = null;
-			}
-			this.io.in(socket.data.roomId).emit("roomDeleted");
-			AgilePokerService.sessions.delete(socket.data.roomId);
-			this.io.in(socket.data.roomId).disconnectSockets();
+			console.log("Setting interval");
+			this._disconnectionInterval = setInterval(() => {
+				this._handleHostDisconnect(socket, socket.data.roomId);
+			}, 5000);
 		}
 	}
 
@@ -70,7 +97,7 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 		},
 		@ConnectedSocket()
 		socket: ExtendedSocket,
-	): void {
+	) {
 		socket.leave(socket.id);
 		const participants = new Map();
 		participants.set(clientUUID, {
@@ -78,11 +105,7 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 			vote: -1,
 			cardBackNumber: String(Math.floor(Math.random() * 9)),
 		});
-		AgilePokerService.sessions.set(roomId, {
-			participants,
-			roomName,
-			host: clientUUID,
-		});
+		AgilePokerService.sessions.set(roomId, { participants, roomName, host: clientUUID });
 		socket.data.host = true;
 		socket.data.roomId = roomId;
 		socket.data.UUID = clientUUID;
@@ -95,8 +118,9 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 	handleConnectToTheRoom(
 		@MessageBody()
 		{ roomId, userName, clientUUID }: { roomId: string; userName: string; clientUUID: string },
-		@ConnectedSocket() socket: ExtendedSocket,
-	): void {
+		@ConnectedSocket()
+		socket: ExtendedSocket,
+	) {
 		socket.data.roomId = roomId;
 		socket.data.UUID = clientUUID;
 		socket.join(roomId);

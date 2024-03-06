@@ -20,6 +20,7 @@ export type SessionType = {
 	participants: Map<string, ParticipantObject>;
 	roomName: string;
 	host?: string;
+	hostUpdated?: boolean;
 };
 
 interface PokerContextGetters {

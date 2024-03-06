@@ -29,6 +29,7 @@ export default function AgilePokerPage() {
 		setToastMessage(message);
 		setShowToast(true);
 	};
+
 	useEffect(() => {
 		// Checking that socket connected and we have roomId from the URL
 		if (!socket || !roomId) return;
@@ -57,7 +58,10 @@ export default function AgilePokerPage() {
 				return;
 			});
 		}
-	}, [socket, roomId, state, navigate, setRoomInfoAttribute, setRoomName]);
+		socket.on("announcement", (data: string) => {
+			showToastMessage(data);
+		});
+	}, [socket, roomId, state, navigate, setRoomInfoAttribute, showToastMessage, setRoomName]);
 
 	return isLoading ? (
 		<main className="flex-grow flex flex-col items-center justify-around ">
