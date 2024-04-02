@@ -1,64 +1,72 @@
-import React, { createContext, useContext, useState } from 'react';
-import {
-  CountdownState,
-  PokerContextProps,
-  RoomInfo,
-  SessionType,
-} from '../../../types';
+import { PropsWithChildren, createContext, useContext, useMemo, useState } from "react";
+import { CountdownState, PokerContextProps, RoomInfo, SessionType } from "../../../types";
 
-const PokerContext = createContext<PokerContextProps>({
-  roomInfo: {
-    userName: '',
-    roomId: '',
-    isHost: false,
-    countdownState: CountdownState.Stopped,
-  },
-  clientUUID: '',
-  setRoomInfo: () => {},
-  pokerSession: { participants: new Map(), votes: new Map(), roomName: '' },
-  setPokerSession: () => {},
-  countdownState: CountdownState.Stopped,
-  setCountdownState: () => {},
-  selectedCard: 0,
-  setSelectedCard: () => {},
-});
+const PokerContext = createContext<PokerContextProps>([
+	{
+		roomInfo: {
+			userName: "",
+			roomId: "",
+			isHost: false,
+		},
+		pokerSession: {
+			participants: new Map(),
+			roomName: "",
+		},
+		countdownState: CountdownState.Stopped,
+		selectedCard: null,
+		clientUUID: localStorage.getItem ? localStorage.getItem("clientUUID") : "",
+	},
+	{
+		setRoomInfoAttribute: () => {},
+		setPokerSession: () => {},
+		setCountdownState: () => {},
+		setRoomName: () => {},
+		setSelectedCard: () => {},
+	},
+]);
 
-export const PokerProvider: React.FC<React.PropsWithChildren<{}>> = ({
-  children,
-}) => {
-  const [roomInfo, setRoomInfo] = useState<RoomInfo>({
-    userName: '',
-    roomId: '',
-    isHost: false,
-    countdownState: CountdownState.Stopped,
-  });
+export const PokerProvider = ({ children }: PropsWithChildren) => {
+	const [roomInfo, setRoomInfo] = useState<RoomInfo>({
+		userName: "",
+		roomId: "",
+		isHost: false,
+	});
 
-  const [pokerSession, setPokerSession] = useState<SessionType>({
-    participants: new Map(),
-    votes: new Map(),
-    roomName: '',
-  });
-  const [countdownState, setCountdownState] = useState<CountdownState>(
-    CountdownState.Stopped,
-  );
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
-  return (
-    <PokerContext.Provider
-      value={{
-        roomInfo,
-        setRoomInfo,
-        pokerSession,
-        setPokerSession,
-        countdownState,
-        setCountdownState,
-        selectedCard,
-        setSelectedCard,
-        clientUUID: localStorage.getItem('clientUUID')!,
-      }}
-    >
-      {children}
-    </PokerContext.Provider>
-  );
+	const [pokerSession, setPokerSession] = useState<SessionType>({
+		participants: new Map(),
+		roomName: "",
+	});
+
+	const [countdownState, setCountdownState] = useState<CountdownState>(CountdownState.Stopped);
+	const [selectedCard, setSelectedCard] = useState<number | null>(null);
+	const handlers = useMemo(
+		() => ({
+			setRoomInfoAttribute: (roomInfo: Partial<RoomInfo>) => {
+				setRoomInfo((prev) => {
+					return { ...prev, ...roomInfo };
+				});
+			},
+			setRoomName: (roomName: string) => {
+				setPokerSession((prev) => {
+					return { ...prev, roomName };
+				});
+			},
+			setPokerSession,
+			setCountdownState,
+			setSelectedCard,
+		}),
+		[],
+	);
+
+	const getters = {
+		roomInfo,
+		pokerSession,
+		countdownState,
+		selectedCard,
+		clientUUID: localStorage.getItem ? localStorage.getItem("clientUUID") : "",
+	};
+
+	return <PokerContext.Provider value={[getters, handlers]}>{children}</PokerContext.Provider>;
 };
 
 export const usePoker = () => useContext(PokerContext);

@@ -10,6 +10,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@biomejs/biome": "1.5.3",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "react-next-tilt": "^0.4.3"
   }
 }
