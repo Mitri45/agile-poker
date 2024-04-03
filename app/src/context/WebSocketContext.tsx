@@ -45,8 +45,6 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 			newSocket.on("disconnect", (reason) => {
 				if (reason === "io server disconnect") {
 					newSocket.connect();
-				} else {
-					newSocket?.emit("userLeft", { clientUUID });
 				}
 			});
 			newSocket.on("roomCreated", (sessionInfo: SessionType) => {
