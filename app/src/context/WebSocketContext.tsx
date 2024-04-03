@@ -42,6 +42,13 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 		});
 		setSocket(newSocket);
 		if (newSocket) {
+			newSocket.on("disconnect", (reason) => {
+				if (reason === "io server disconnect") {
+					newSocket.connect();
+				} else {
+					newSocket?.emit("userLeft", { clientUUID });
+				}
+			});
 			newSocket.on("roomCreated", (sessionInfo: SessionType) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
 			});
@@ -55,7 +62,6 @@ export const WebSocketProvider = ({ children }: PropsWithChildren) => {
 				setPokerSession(deserializedSessionInfo(sessionInfo));
 			});
 			newSocket.on("roomDeleted", () => {
-				console.log("roomDeleted");
 				setPokerSession({ participants: new Map(), roomName: "" });
 				navigate("/", {
 					state: {
