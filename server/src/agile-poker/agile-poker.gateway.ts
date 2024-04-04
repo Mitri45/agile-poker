@@ -17,9 +17,9 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 	static countdownInterval: NodeJS.Timeout;
 	_serializedSession(session: SessionType) {
 		return {
-			participants: [...session.participants.entries()],
-			roomName: session.roomName,
-			host: session.host,
+			participants: session?.participants ? [...session.participants.entries()] : [],
+			roomName: session?.roomName,
+			host: session?.host,
 			hostUpdated: session?.hostUpdated ?? false,
 		};
 	}
@@ -42,33 +42,37 @@ export class AgilePokerGateway implements OnGatewayConnection, OnGatewayDisconne
 
 	handleDisconnect(socket: ExtendedSocket) {
 		const session = this.agilePokerService.getSession(socket.data.roomId);
+		const participants = session?.participants;
 		if (socket.data.host) {
-			const participants = session.participants;
-			participants.delete(session.host);
-			if (AgilePokerGateway.countdownInterval) {
-				clearInterval(AgilePokerGateway.countdownInterval);
-				AgilePokerGateway.countdownInterval = null;
-			}
-			if (participants.size > 0) {
-				const newHost = participants.keys().next().value;
-				session.host = newHost;
-				session.hostUpdated = true;
-				this.io.to(socket.data.roomId).emit("agilePokerUpdate", this._serializedSession(session));
-				this.io
-					.to(socket.data.roomId)
-					.emit("announcement", `Host has left the session. New host is ${participants.get(newHost).userName}`);
-			} else {
-				this.io.in(socket.data.roomId).emit("roomDeleted");
-				AgilePokerService.sessions.delete(socket.data.roomId);
-				this.io.in(socket.data.roomId).disconnectSockets();
+			if (participants) {
+				participants.delete(session.host);
+				if (AgilePokerGateway.countdownInterval) {
+					clearInterval(AgilePokerGateway.countdownInterval);
+					AgilePokerGateway.countdownInterval = null;
+				}
+				if (participants.size > 0) {
+					const newHost = participants.keys().next().value;
+					session.host = newHost;
+					session.hostUpdated = true;
+					this.io.to(socket.data.roomId).emit("agilePokerUpdate", this._serializedSession(session));
+					this.io
+						.to(socket.data.roomId)
+						.emit("announcement", `Host has left the session. New host is ${participants.get(newHost).userName}`);
+				} else {
+					this.io.in(socket.data.roomId).emit("roomDeleted");
+					AgilePokerService.sessions.delete(socket.data.roomId);
+					this.io.in(socket.data.roomId).disconnectSockets();
+				}
 			}
 		} else {
-			this.io
-				.to(socket.data.roomId)
-				.emit(
-					"announcement",
-					`${session.participants.get(socket.data.UUID).userName} has left the session or disconnected.`,
-				);
+			if (participants && session?.participants?.get(socket.data.UUID)) {
+				this.io
+					.to(socket.data.roomId)
+					.emit(
+						"announcement",
+						`${session.participants.get(socket.data.UUID).userName} has left the session or disconnected.`,
+					);
+			}
 			this.agilePokerService.endUserSession(socket.data.roomId, socket.data.UUID);
 			this.io.to(socket.data.roomId).emit("agilePokerUpdate", this._serializedSession(session));
 		}

@@ -29,64 +29,70 @@ export default function AgilePokerPage() {
 		setToastMessage(message);
 		setShowToast(true);
 	};
-
+	console.log("AgilePokerPage", {
+		roomId,
+		state,
+		navigate,
+		setRoomInfoAttribute,
+		showToastMessage,
+		setRoomName,
+	});
 	useEffect(() => {
 		// Checking that socket connected and we have roomId from the URL
 		if (!socket || !roomId) return;
 		// Anon user used room URL
-		if (state?.isHost !== undefined && state.isHost) {
-			if (state?.isLoading !== undefined) setIsLoading(state.isLoading);
-			setIsCopyLinkOpen(true);
-		} else {
-			// check that room is not empty on the backend
-			socket.emit("checkRoom", { roomId }, (response: { status: string; roomName: string; error?: string }) => {
-				if (response && response.status === "ok") {
+		socket.emit("checkRoom", { roomId }, (response: { status: string; roomName: string; error?: string }) => {
+			if (response && response.status === "ok") {
+				if (state?.isHost !== undefined && state.isHost) {
+					if (state?.isLoading !== undefined) setIsLoading(state.isLoading);
+					setIsCopyLinkOpen(true);
+				} else {
+					// check that room is not empty on the backend
 					setIsLoading(false);
 					setUserJoining(true);
 					setRoomInfoAttribute({
 						roomId: roomId,
 					});
 					setRoomName(response.roomName);
-				} else if (response && response.status === "error") {
-					// No such room exist - starting new session
-					navigate("/", {
-						state: {
-							message: "Room you were trying to access doesn't exist",
-						},
-					});
 				}
-				return;
-			});
-		}
+			}
+			if (response && response.status === "error") {
+				// No such room exist - starting new session
+				navigate("/", {
+					state: {
+						message: "Room you were trying to access doesn't exist",
+					},
+				});
+			}
+		});
+	}, [socket, roomId, state, navigate, setRoomInfoAttribute, setRoomName]);
+
+	useEffect(() => {
+		if (!socket) return;
 		socket.on("announcement", (data: string) => {
 			showToastMessage(data);
 		});
-	}, [socket, roomId, state, navigate, setRoomInfoAttribute, showToastMessage, setRoomName]);
+	}, [socket, showToastMessage]);
 
 	return isLoading ? (
-		<main className="flex-grow flex flex-col items-center justify-around ">
+		<main className="max-h-screen flex-grow flex flex-col items-center justify-around ">
 			<div className="animate-spin rounded-full h-32 w-32 border-t-2 border-blue-500 border-solid" />
 		</main>
 	) : (
-		<div className="flex flex-col h-screen p-5">
+		<div className="max-h-screen flex flex-col h-screen p-5">
 			<Header />
 			<main className="flex-grow flex flex-col items-center justify-around">
 				<CopyLink isOpen={isCopyLinkOpen} showToastMessage={showToastMessage} />
 				<GetUsername isOpen={userJoining} roomId={roomId} />
-				<div className="flex flex-col">
-					<DynamicParticipantList session={pokerSession} />
+				<DynamicParticipantList session={pokerSession} />
+				<div className="flex justify-center gap-24 w-full">
 					<PokerTable />
-				</div>
-
-				<div className="flex px-4 min-h-[400px] justify-around lg:justify-between items-center w-full max-w-[1200px]">
 					<Timer showToastMessage={showToastMessage} />
-					<div className="flex w-1/2 lg:w-full justify-evenly flex-wrap max-w-[1000px]">
-						<div className="grid grid-cols-3 gap-y-6 xl:grid-flow-col xl:auto-cols-max gap-4">
-							{pokerNumbers.map((rank) => (
-								<UserCard key={rank} rank={rank} />
-							))}
-						</div>
-					</div>
+				</div>
+				<div className="grid sm:grid-cols-3 gap-y-6 grid-flow-col auto-cols-max gap-x-9">
+					{pokerNumbers.map((rank) => (
+						<UserCard key={rank} rank={rank} />
+					))}
 				</div>
 				<Toast message={toastMessage} showToast={showToast} setShowToast={setShowToast} />
 			</main>
