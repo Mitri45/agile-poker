@@ -29,14 +29,6 @@ export default function AgilePokerPage() {
 		setToastMessage(message);
 		setShowToast(true);
 	};
-	console.log("AgilePokerPage", {
-		roomId,
-		state,
-		navigate,
-		setRoomInfoAttribute,
-		showToastMessage,
-		setRoomName,
-	});
 	useEffect(() => {
 		// Checking that socket connected and we have roomId from the URL
 		if (!socket || !roomId) return;
